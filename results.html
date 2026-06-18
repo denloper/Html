@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты анализов</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 750px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 { font-size: 28px; margin-bottom: 5px; color: #2c3e50; }
+        .subtitle { color: #7f8c8d; margin-bottom: 20px; font-size: 14px; }
+        .patient-info {
+            background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 20px;
+        }
+        .section-title {
+            font-weight: 700; font-size: 18px; margin: 20px 0 10px; color: #2c3e50;
+        }
+        .result-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #f8f9fa; padding: 12px 16px; border-radius: 10px; margin-bottom: 8px; font-size: 15px;
+        }
+        .test-name { flex: 2; font-weight: 500; }
+        .test-value { flex: 1; text-align: center; font-weight: 600; }
+        .test-status { flex: 1; text-align: right; font-weight: 600; font-size: 14px; }
+        .status-normal { color: #27ae60; } .status-low { color: #e67e22; } .status-high { color: #e74c3c; }
+        .status-text { color: #888; }
+        .conclusion-card {
+            background: #fef9e7; border-left: 6px solid #f1c40f; padding: 15px; border-radius: 10px; margin-bottom: 15px;
+        }
+        .conclusion-card.critical { background: #ffe5e5; border-left-color: #e74c3c; }
+        .conclusion-card.high { background: #ffeaea; border-left-color: #e74c3c; }
+        .conclusion-card.medium { background: #fef9e7; border-left-color: #f39c12; }
+        .conclusion-card.low { background: #eafaf1; border-left-color: #27ae60; }
+        .conclusion-card strong { display: block; font-size: 16px; margin-bottom: 5px; }
+        .btn {
+            width: 100%; background: #3498db; color: white; border: none; padding: 12px; border-radius: 12px;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 20px;
+        }
+        .btn:hover { background: #2980b9; }
+        .small-note { margin-top: 15px; font-size: 12px; color: #888; text-align: center; }
+        a.back-link { display: block; margin-top: 10px; text-align: center; color: #3498db; text-decoration: none; font-size: 14px; }
+        a.back-link:hover { text-decoration: underline; }
+        .supplement-item {
+            background: #f4f9f9; padding: 12px; border-radius: 8px; margin-bottom: 10px;
+            border-left: 4px solid #5dade2;
+        }
+        .danger-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-left: 8px;
+        }
+        .danger-low { background: #d4edda; color: #155724; }
+        .danger-medium { background: #fff3cd; color: #856404; }
+        .danger-high { background: #f8d7da; color: #721c24; }
+        .overall-box {
+            margin-top:15px; padding:15px; background: #f0f0f0; border-radius:8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Результаты анализов</h1>
+        <div id="patient-info"></div>
+        <div id="results-container"></div>
+        <div id="conclusion-container"></div>
+        <button class="btn" id="refresh-btn" style="display:none;" onclick="renderResults()">🔄 Обновить результаты</button>
+        <div class="small-note">
+            ⚕️ Демонстрационные значения на основе симптомов. Не являются реальными медицинскими данными.
+        </div>
+        <a class="back-link" href="index.html">← Вернуться к выбору симптомов</a>
+    </div>
+
+    <script>
+        // Нормы
+        const norms = {
+            "Глюкоза натощак": { min: 3.3, max: 5.5, unit: "ммоль/л" },
+            "Гликированный гемоглобин (HbA1c)": { min: 4.0, max: 6.0, unit: "%" },
+            "Общий холестерин": { min: 3.0, max: 5.2, unit: "ммоль/л" },
+            "ЛПНП": { min: 0, max: 3.0, unit: "ммоль/л" },
+            "ЛПВП": { min: 1.0, max: 2.0, unit: "ммоль/л" },
+            "Триглицериды": { min: 0.5, max: 1.7, unit: "ммоль/л" },
+            "ТТГ": { min: 0.4, max: 4.0, unit: "мМЕ/л" },
+            "Свободный Т4": { min: 10, max: 22, unit: "пмоль/л" },
+            "Свободный Т3": { min: 3.5, max: 6.5, unit: "пмоль/л" },
+            "Ферритин": { min: 20, max: 250, unit: "нг/мл", genderDep: true },
+            "Железо сывороточное": { min: 10, max: 30, unit: "мкмоль/л" },
+            "Витамин D 25-OH": { min: 30, max: 100, unit: "нг/мл" },
+            "Витамин B12": { min: 180, max: 900, unit: "пг/мл" },
+            "Фолиевая кислота": { min: 3, max: 17, unit: "нг/мл" },
+            "Креатинин": { min: 50, max: 110, unit: "мкмоль/л", genderDep: true },
+            "Мочевина": { min: 2.5, max: 8.3, unit: "ммоль/л" },
+            "АЛТ": { min: 0, max: 40, unit: "Ед/л" },
+            "АСТ": { min: 0, max: 40, unit: "Ед/л" },
+            "Билирубин общий": { min: 3.4, max: 17.1, unit: "мкмоль/л" },
+            "Общий белок": { min: 65, max: 85, unit: "г/л" },
+            "Альбумин": { min: 35, max: 50, unit: "г/л" },
+            "Мочевая кислота": { min: 140, max: 420, unit: "мкмоль/л" },
+            "Магний": { min: 0.75, max: 1.25, unit: "ммоль/л" },
+            "Калий": { min: 3.5, max: 5.1, unit: "ммоль/л" },
+            "Натрий": { min: 135, max: 145, unit: "ммоль/л" },
+            "Кальций общий": { min: 2.15, max: 2.55, unit: "ммоль/л" },
+            "Цинк": { min: 10, max: 18, unit: "мкмоль/л" },
+            "Тестостерон общий": { min: 8, max: 35, unit: "нмоль/л", genderDep: true },
+            "Пролактин": { min: 50, max: 400, unit: "мЕд/л", genderDep: true },
+            "Инсулин натощак": { min: 2.6, max: 24.9, unit: "мкЕд/мл" },
+            "ПСА общий (простатспецифический антиген)": { min: 0, max: 4.0, unit: "нг/мл", gender: "male" }
+        };
+
+        // Направления отклонений для симптомов
+        const symptomDirections = {
+            "выпадение_волос": { "Ферритин":"low", "Железо сывороточное":"low", "Витамин D 25-OH":"low", "Витамин B12":"low", "Фолиевая кислота":"low" },
+            "сонливость": { "Ферритин":"low", "ТТГ":"high", "Глюкоза натощак":"high", "Витамин D 25-OH":"low", "Витамин B12":"low" },
+            "слабость": { "Ферритин":"low", "Витамин B12":"low", "Витамин D 25-OH":"low", "Глюкоза натощак":"low" },
+            "набор_веса": { "ТТГ":"high", "Глюкоза натощак":"high", "Инсулин натощак":"high" },
+            "тяга_к_сладкому": { "Глюкоза натощак":"high", "Инсулин натощак":"high", "HbA1c":"high" },
+            "потеря_веса": { "ТТГ":"low", "Глюкоза натощак":"high", "Свободный Т4":"high" },
+            "сердцебиение": { "ТТГ":"low", "Свободный Т4":"high", "Ферритин":"low" },
+            "тревожность": { "ТТГ":"low", "Свободный Т4":"high", "Витамин B12":"low" },
+            "частое_мочеиспускание": { "Глюкоза натощак":"high", "HbA1c":"high" },
+            "отеки": { "Креатинин":"high", "ТТГ":"high", "Альбумин":"low" },
+            "снижение_либидо": { "Тестостерон общий":"low", "Пролактин":"high" },
+            "проблемы_эрекции": { "Тестостерон общий":"low", "Глюкоза натощак":"high", "Пролактин":"high" },
+            "нарушение_цикла": { "Тестостерон общий":"high", "Пролактин":"high", "ТТГ":"high" },
+            "боль_в_животе": { "АЛТ":"high", "АСТ":"high" },
+            "тошнота": { "АЛТ":"high", "АСТ":"high" },
+            "диарея": { "Кальпротектин в кале":"high" },
+            "запоры": { "ТТГ":"high" },
+            "одышка": { "Ферритин":"low", "ТТГ":"low" },
+            "боль_в_груди": { "Тропониновый тест":"high" },
+            "частые_простуды": { "Витамин D 25-OH":"low", "Ферритин":"low" },
+            "головная_боль": { "Ферритин":"low", "Витамин B12":"low" },
+            "онемение": { "Витамин B12":"low", "Фолиевая кислота":"low", "Магний":"low" },
+            "судороги": { "Магний":"low", "Калий":"low", "Кальций общий":"low" }
+        };
+
+        // Диагностические правила
+        const diagnosticRules = [
+            {
+                id: 1, name: "Железодефицитная анемия", danger: "medium",
+                doctors: ["Терапевт", "Гематолог"],
+                symptoms: ["слабость", "выпадение_волос", "сонливость"],
+                results: { "Ферритин": "low", "Железо сывороточное": "low" }
+            },
+            {
+                id: 2, name: "Гипотиреоз", danger: "medium",
+                doctors: ["Эндокринолог"],
+                symptoms: ["слабость", "сонливость", "набор_веса"],
+                results: { "ТТГ": "high", "Свободный Т4": "low" }
+            },
+            {
+                id: 3, name: "Гипертиреоз", danger: "high",
+                doctors: ["Эндокринолог"],
+                symptoms: ["сердцебиение", "потливость", "потеря_веса"],
+                results: { "ТТГ": "low", "Свободный Т4": "high" }
+            },
+            {
+                id: 4, name: "Сахарный диабет (подозрение)", danger: "high",
+                doctors: ["Эндокринолог", "Терапевт"],
+                symptoms: ["частое_мочеиспускание", "жажда", "слабость"],
+                results: { "Глюкоза натощак": "high", "HbA1c": "high" }
+            },
+            {
+                id: 5, name: "Дефицит витамина D", danger: "low",
+                doctors: ["Терапевт"],
+                symptoms: ["слабость", "выпадение_волос"],
+                results: { "Витамин D 25-OH": "low" }
+            },
+            {
+                id: 6, name: "Гипогонадизм (низкий тестостерон)", danger: "medium",
+                doctors: ["Уролог", "Андролог", "Эндокринолог"],
+                symptoms: ["снижение_либидо", "проблемы_эрекции"],
+                results: { "Тестостерон общий": "low" }
+            },
+            {
+                id: 7, name: "Поражение печени (гепатит/жировая болезнь)", danger: "high",
+                doctors: ["Гастроэнтеролог", "Гепатолог"],
+                symptoms: ["боль_в_животе", "тошнота"],
+                results: { "АЛТ": "high", "АСТ": "high" }
+            },
+            {
+                id: 8, name: "Хроническая болезнь почек (подозрение)", danger: "high",
+                doctors: ["Нефролог", "Терапевт"],
+                symptoms: ["отеки", "слабость"],
+                results: { "Креатинин": "high", "Мочевина": "high" }
+            },
+            {
+                id: 9, name: "Дефицит витамина B12", danger: "low",
+                doctors: ["Терапевт", "Невролог"],
+                symptoms: ["онемение", "слабость"],
+                results: { "Витамин B12": "low" }
+            },
+            {
+                id: 10, name: "Гиперпролактинемия", danger: "medium",
+                doctors: ["Эндокринолог", "Гинеколог"],
+                symptoms: ["нарушение_цикла", "снижение_либидо"],
+                results: { "Пролактин": "high" }
+            }
+        ];
+
+        // Карта рекомендаций (добавлены врачи и длительность)
+        const supplementMap = {
+            "Витамин D 25-OH": {
+                low: {
+                    supplement: "Витамин D3 (холекальциферол) 2000–4000 МЕ/сут",
+                    doctors: ["Терапевт"],
+                    duration: "2–3 месяца, затем контроль анализа",
+                    danger: "low",
+                    note: "Поддерживает иммунитет, кости. Длительный дефицит повышает риск остеопороза."
+                }
+            },
+            "Витамин B12": {
+                low: {
+                    supplement: "Витамин B12 (цианокобаламин) 1000–2000 мкг/сут",
+                    doctors: ["Терапевт", "Невролог"],
+                    duration: "1–2 месяца, далее по результатам",
+                    danger: "low",
+                    note: "Необходим для нервной системы. Сильный дефицит может вызвать анемию и нейропатию."
+                }
+            },
+            "Фолиевая кислота": {
+                low: {
+                    supplement: "Фолиевая кислота 400–800 мкг/сут",
+                    doctors: ["Терапевт"],
+                    duration: "1–2 месяца",
+                    danger: "low",
+                    note: "Важна для кроветворения. Дефицит приводит к анемии."
+                }
+            },
+            "Ферритин": {
+                low: {
+                    supplement: "Препараты железа (сульфат/бисглицинат) по назначению врача",
+                    doctors: ["Терапевт", "Гематолог"],
+                    duration: "1–2 месяца под контролем анализов",
+                    danger: "medium",
+                    note: "Низкий ферритин — скрытый железодефицит. Без лечения переходит в анемию."
+                }
+            },
+            "Железо сывороточное": {
+                low: {
+                    supplement: "Препараты железа (после консультации с врачом)",
+                    doctors: ["Терапевт", "Гематолог"],
+                    duration: "1–2 месяца",
+                    danger: "medium",
+                    note: "Может потребоваться дополнительная диагностика."
+                }
+            },
+            "Магний": {
+                low: {
+                    supplement: "Магний (цитрат/глицинат) 300–400 мг/сут",
+                    doctors: ["Терапевт"],
+                    duration: "1–2 месяца, затем по симптомам",
+                    danger: "low",
+                    note: "Судороги, утомляемость, нарушения сна."
+                }
+            },
+            "Калий": {
+                low: {
+                    supplement: "Продукты, богатые калием (бананы, картофель), или препараты калия (по назначению)",
+                    doctors: ["Терапевт", "Кардиолог"],
+                    duration: "до нормализации уровня",
+                    danger: "medium",
+                    note: "Выраженный дефицит опасен для сердца."
+                }
+            },
+            "Кальций общий": {
+                low: {
+                    supplement: "Кальций (карбонат/цитрат) 500–1000 мг/сут",
+                    doctors: ["Терапевт"],
+                    duration: "1–3 месяца",
+                    danger: "low",
+                    note: "Важен для костей и сокращения мышц."
+                }
+            },
+            "Цинк": {
+                low: {
+                    supplement: "Цинк (пиколинат/цитрат) 15–30 мг/сут",
+                    doctors: ["Терапевт"],
+                    duration: "1–2 месяца, затем перерыв",
+                    danger: "low",
+                    note: "Иммунитет, состояние кожи и волос."
+                }
+            },
+            "Тестостерон общий": {
+                low: {
+                    supplement: "Гормональная терапия только под контролем врача (уролог/эндокринолог)",
+                    doctors: ["Уролог", "Андролог", "Эндокринолог"],
+                    duration: "длительно, по схеме врача",
+                    danger: "medium",
+                    note: "Не пытайтесь самостоятельно корректировать тестостерон."
+                }
+            },
+            "Глюкоза натощак": {
+                high: {
+                    supplement: "Контроль углеводов, консультация эндокринолога. Витамины не заменят лечение.",
+                    doctors: ["Эндокринолог", "Терапевт"],
+                    duration: "постоянный контроль",
+                    danger: "high",
+                    note: "Высокий сахар — риск диабета."
+                },
+                low: {
+                    supplement: "Регулярное питание, возможно, обследование на гипогликемию.",
+                    doctors: ["Эндокринолог", "Терапевт"],
+                    duration: "до стабилизации",
+                    danger: "medium",
+                    note: "Низкая глюкоза может быть опасна."
+                }
+            },
+            "HbA1c": {
+                high: {
+                    supplement: "Строгая диета, наблюдение эндокринолога.",
+                    doctors: ["Эндокринолог", "Терапевт"],
+                    duration: "контроль каждые 3 месяца",
+                    danger: "high",
+                    note: "Показатель долгосрочного повышения сахара."
+                }
+            },
+            "ТТГ": {
+                high: {
+                    supplement: "Не витамины – требуется обследование щитовидной железы (эндокринолог).",
+                    doctors: ["Эндокринолог"],
+                    duration: "лечение гормонами (тироксин) – пожизненно или до нормализации",
+                    danger: "medium",
+                    note: "Гипотиреоз лечится гормонами."
+                },
+                low: {
+                    supplement: "Не витамины – требуется обследование щитовидной железы.",
+                    doctors: ["Эндокринолог"],
+                    duration: "лечение зависит от причины (тиреостатики, операция)",
+                    danger: "high",
+                    note: "Гипертиреоз опасен для сердца."
+                }
+            },
+            "АЛТ": {
+                high: {
+                    supplement: "Не витамины – необходимо выяснить причину (печень). Гепатопротекторы только по назначению врача.",
+                    doctors: ["Гастроэнтеролог", "Гепатолог", "Терапевт"],
+                    duration: "до нормализации ферментов",
+                    danger: "high",
+                    note: "Повреждение печени."
+                }
+            },
+            "АСТ": {
+                high: {
+                    supplement: "Аналогично АЛТ – консультация гастроэнтеролога.",
+                    doctors: ["Гастроэнтеролог", "Кардиолог"],
+                    duration: "до нормализации ферментов",
+                    danger: "high",
+                    note: "Повреждение печени или сердца."
+                }
+            },
+            "Креатинин": {
+                high: {
+                    supplement: "Не витамины – срочно к нефрологу/терапевту.",
+                    doctors: ["Нефролог", "Терапевт"],
+                    duration: "постоянный мониторинг",
+                    danger: "high",
+                    note: "Снижение функции почек."
+                }
+            },
+            "Альбумин": {
+                low: {
+                    supplement: "Белковое питание, возможно, консультация гастроэнтеролога.",
+                    doctors: ["Гастроэнтеролог", "Терапевт"],
+                    duration: "до восстановления уровня",
+                    danger: "medium",
+                    note: "Низкий альбумин может указывать на проблемы с печенью или почками."
+                }
+            }
+        };
+
+        // Демо пациент
+        const demoPatient = {
+            gender: "male", age: 35,
+            symptoms: ["слабость", "сонливость", "выпадение_волос"],
+            tests: ["Глюкоза натощак","Гликированный гемоглобин (HbA1c)","ТТГ","Свободный Т4","Ферритин","Витамин D 25-OH","Витамин B12","Общий анализ крови (ОАК) с лейкоформулой","ЭКГ"]
+        };
+
+        // Получение данных
+        const params = new URLSearchParams(window.location.search);
+        const dataParam = params.get('data');
+        let patientData = null;
+        try { if(dataParam) patientData = JSON.parse(decodeURIComponent(dataParam)); } catch(e){}
+        if(!patientData || !patientData.tests || patientData.tests.length===0) {
+            const stored = sessionStorage.getItem('checkupPlan');
+            if(stored) try { patientData = JSON.parse(stored); } catch(e){}
+        }
+        if(!patientData || !patientData.tests || patientData.tests.length===0) patientData = demoPatient;
+
+        let generatedResults = [];
+
+        function getNormRange(analysis, gender) {
+            const n = norms[analysis];
+            if(!n) return null;
+            let min = n.min, max = n.max;
+            if(n.genderDep) {
+                if(analysis==="Ферритин") { min = gender==='female'?10:30; max = gender==='female'?150:300; }
+                else if(analysis==="Креатинин") { min = gender==='female'?45:60; max = gender==='female'?90:110; }
+                else if(analysis==="Тестостерон общий") { min = gender==='female'?0.5:8; max = gender==='female'?2.5:35; }
+                else if(analysis==="Пролактин") { min = 50; max = gender==='female'?500:400; }
+            }
+            return { min, max, unit: n.unit };
+        }
+
+        function generateValue(analysis, gender, symptoms) {
+            const rangeData = getNormRange(analysis, gender);
+            if(!rangeData) return null;
+            const { min, max, unit } = rangeData;
+            let lowBias=0, highBias=0;
+            symptoms.forEach(s => {
+                const dirs = symptomDirections[s];
+                if(dirs && dirs[analysis]==='low') lowBias++;
+                else if(dirs && dirs[analysis]==='high') highBias++;
+            });
+            let pNorm=60, pLow=20, pHigh=20;
+            pLow += lowBias*15; pHigh += highBias*15;
+            pNorm -= (lowBias+highBias)*15; if(pNorm<0) pNorm=0;
+            const total = pNorm+pLow+pHigh;
+            const rand = Math.random()*total;
+            let type = rand < pNorm ? 'normal' : (rand < pNorm+pLow ? 'low' : 'high');
+            const range = max - min;
+            let value;
+            if(type==='normal') value = min + Math.random()*range;
+            else if(type==='low') {
+                const lowMin = Math.max(0, min - 0.5*range);
+                value = lowMin + Math.random()*(min - lowMin);
+            } else {
+                const highMax = max + 0.5*range;
+                value = max + Math.random()*(highMax - max);
+            }
+            if(unit.includes('%') || ['нг/мл','пг/мл','мкЕд/мл'].includes(unit)) value = Math.round(value*10)/10;
+            else if(['ммоль/л','мкмоль/л','пмоль/л','нмоль/л'].includes(unit)) value = Math.round(value*100)/100;
+            else if(['Ед/л','г/л','мМЕ/л'].includes(unit)) value = Math.round(value*10)/10;
+            else value = Math.round(value*10)/10;
+            return { value, type, unit };
+        }
+
+        function matchCondition(rule, symptoms, resultsMap) {
+            const hasSymptoms = rule.symptoms.every(s => symptoms.includes(s));
+            if(!hasSymptoms) return false;
+            if(rule.results) {
+                for(const [test, direction] of Object.entries(rule.results)) {
+                    if(!resultsMap[test] || resultsMap[test] !== direction) return false;
+                }
+            }
+            return true;
+        }
+
+        function generateConclusion(symptoms, resultsMap) {
+            const container = document.getElementById('conclusion-container');
+            const matched = diagnosticRules.filter(rule => matchCondition(rule, symptoms, resultsMap));
+
+            if (matched.length > 0) {
+                const allDoctors = new Set();
+                matched.forEach(rule => rule.doctors.forEach(doc => allDoctors.add(doc)));
+                const doctorsList = Array.from(allDoctors).join(', ');
+
+                let html = '<div class="section-title">📋 Возможные состояния</div>';
+                matched.forEach(rule => {
+                    const dangerEmoji = { low:'🟢', medium:'🟡', high:'🔴', critical:'⚠️' };
+                    html += `
+                        <div class="conclusion-card ${rule.danger}">
+                            <strong>${dangerEmoji[rule.danger] || ''} ${rule.name}</strong>
+                            <span>Опасность: <b>${rule.danger==='low'?'Низкая':rule.danger==='medium'?'Средняя':rule.danger==='high'?'Высокая':'Критическая'}</b></span>
+                        </div>
+                    `;
+                });
+                // Единый блок с врачами (без мелкого шрифта)
+                html += `
+                    <div class="overall-box">
+                        <strong>👨‍⚕️ Рекомендуемые врачи:</strong> ${doctorsList}<br>
+                        На основе найденных состояний рекомендуется записаться на приём.
+                    </div>
+                `;
+                container.innerHTML = html;
+                return;
+            }
+
+            // Без точных диагнозов – рекомендации по витаминам
+            const recommendations = [];
+            let maxDanger = 'low';
+            const doctorsSet = new Set();
+
+            for (const [test, result] of Object.entries(resultsMap)) {
+                if (result === 'normal' || result === 'text') continue;
+                const mapping = supplementMap[test];
+                if (!mapping) continue;
+                const directionInfo = mapping[result];
+                if (!directionInfo) continue;
+                recommendations.push({
+                    test,
+                    ...directionInfo,
+                    status: result
+                });
+                directionInfo.doctors.forEach(doc => doctorsSet.add(doc));
+                if (directionInfo.danger === 'high') maxDanger = 'high';
+                else if (directionInfo.danger === 'medium' && maxDanger !== 'high') maxDanger = 'medium';
+            }
+
+            let html = '<div class="section-title">💊 Рекомендации по витаминам и микроэлементам</div>';
+
+            if (recommendations.length === 0) {
+                html += '<p>Все показатели в норме – специфических добавок не требуется. Поддерживайте сбалансированное питание.</p>';
+                doctorsSet.add("Терапевт");
+            } else {
+                recommendations.forEach(rec => {
+                    const statusText = rec.status === 'low' ? 'Понижен' : 'Повышен';
+                    html += `
+                        <div class="supplement-item">
+                            <strong>${rec.test} (${statusText})</strong><br>
+                            💡 <b>Что принимать:</b> ${rec.supplement}<br>
+                            🕒 <b>Длительность:</b> ${rec.duration}<br>
+                            📝 ${rec.note}
+                            <span class="danger-badge danger-${rec.danger}">${rec.danger === 'low' ? 'Низкая угроза' : rec.danger === 'medium' ? 'Средняя угроза' : 'Высокая угроза'}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            const overallText = maxDanger === 'high' ? 'Высокая – требуется срочная консультация врача' :
+                               maxDanger === 'medium' ? 'Средняя – рекомендуется визит к специалисту в плановом порядке' :
+                               'Низкая – можно корректировать дефициты самостоятельно, но консультация терапевта не помешает';
+            const doctorsList = Array.from(doctorsSet).join(', ');
+
+            // Текст "Даже при низкой угрозе..." теперь обычным шрифтом
+            html += `
+                <div class="overall-box">
+                    <strong>📊 Общая оценка угрозы для здоровья:</strong> ${overallText}<br>
+                    <strong>👨‍⚕️ Рекомендуемые врачи:</strong> ${doctorsList || 'Терапевт'}
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function renderResults() {
+            const patientDiv = document.getElementById('patient-info');
+            const resultsDiv = document.getElementById('results-container');
+            const refreshBtn = document.getElementById('refresh-btn');
+            const gender = patientData.gender;
+            const genderStr = gender==='male'?'Мужской':'Женский';
+            patientDiv.innerHTML = `<div class="patient-info">
+                <strong>Пациент:</strong> ${genderStr}, возраст ${patientData.age} лет<br>
+                <strong>Симптомы:</strong> ${patientData.symptoms.length ? patientData.symptoms.join(', ') : 'не указаны'}
+            </div>`;
+            const symptoms = patientData.symptoms;
+            generatedResults = [];
+            let html = '';
+            let hasNumeric = false;
+            const resultsMap = {};
+            patientData.tests.forEach(test => {
+                const res = generateValue(test, gender, symptoms);
+                if(res) {
+                    hasNumeric = true;
+                    generatedResults.push({ test, ...res });
+                    resultsMap[test] = res.type;
+                    const statusText = res.type==='normal'?'Норма':(res.type==='low'?'Понижен':'Повышен');
+                    const statusClass = `status-${res.type}`;
+                    html += `<div class="result-item">
+                        <span class="test-name">${test}</span>
+                        <span class="test-value">${res.value} ${res.unit}</span>
+                        <span class="test-status ${statusClass}">${statusText}</span>
+                    </div>`;
+                } else {
+                    generatedResults.push({ test, value:'—', unit:'', type:'text' });
+                    resultsMap[test] = 'text';
+                    html += `<div class="result-item">
+                        <span class="test-name">${test}</span>
+                        <span class="test-value">—</span>
+                        <span class="test-status status-text">см. заключение</span>
+                    </div>`;
+                }
+            });
+            resultsDiv.innerHTML = html;
+            refreshBtn.style.display = hasNumeric ? 'block' : 'none';
+
+            generateConclusion(patientData.symptoms, resultsMap);
+        }
+
+        // Первый запуск
+        renderResults();
+    </script>
+</body>
+</html>

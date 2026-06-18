@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симптом-чекер — персональный план анализов</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        .profile-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .profile-field {
+            flex: 1;
+            min-width: 120px;
+        }
+        .profile-field label {
+            background: none;
+            padding: 0;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+        .gender-options {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .symptom-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 15px;
+        }
+        label:hover { background: #e9ecef; }
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #3498db;
+            cursor: pointer;
+        }
+        .red-flag label {
+            background: #ffe5e5;
+            border-left: 4px solid #e74c3c;
+            font-weight: 600;
+        }
+        .btn {
+            width: 100%;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+        .btn:hover { background: #2980b9; }
+        .btn-results {
+            background: #27ae60;
+            display: none;
+            margin-top: 10px;
+        }
+        .btn-results:hover { background: #219a52; }
+        #result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            background: #eef6ff;
+            border-left: 6px solid #3498db;
+        }
+        .alert-red {
+            background: #ffe5e5;
+            border-left-color: #e74c3c;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .block-title {
+            font-weight: 700;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-size: 17px;
+            color: #2c3e50;
+        }
+        .block-list {
+            list-style: disc;
+            padding-left: 25px;
+            margin: 5px 0 10px;
+        }
+        .block-list li {
+            margin-bottom: 4px;
+        }
+        .small-note {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+        }
+        hr {
+            margin: 10px 0;
+            border: 0.5px solid #dcdde1;
+        }
+        #qrcode {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🩺 Персональный план анализов</h1>
+        <p class="subtitle">Укажите пол, возраст и отметьте беспокоящие симптомы — получите структурированный список</p>
+
+        <div class="profile-row">
+            <div class="profile-field">
+                <label>Пол</label>
+                <div class="gender-options">
+                    <label style="background:none; padding:0;">
+                        <input type="radio" name="gender" value="female" checked> Женский
+                    </label>
+                    <label style="background:none; padding:0;">
+                        <input type="radio" name="gender" value="male"> Мужской
+                    </label>
+                </div>
+            </div>
+            <div class="profile-field">
+                <label for="ageInput">Возраст</label>
+                <input type="number" id="ageInput" placeholder="Введите возраст" min="0" max="120" value="30">
+            </div>
+        </div>
+
+        <div class="symptom-group" id="symptoms-list">
+            <label><input type="checkbox" value="слабость"> Слабость, утомляемость</label>
+            <label><input type="checkbox" value="сонливость"> Сонливость днём</label>
+            <label><input type="checkbox" value="выпадение_волос"> Выпадение волос</label>
+            <label><input type="checkbox" value="сухая_кожа"> Сухая кожа, ломкость ногтей</label>
+            <label><input type="checkbox" value="набор_веса"> Набор веса</label>
+            <label><input type="checkbox" value="тяга_к_сладкому"> Тяга к сладкому, голод</label>
+            <label><input type="checkbox" value="потеря_веса"> Потеря веса без причины</label>
+            <label><input type="checkbox" value="сердцебиение"> Сердцебиение, перебои</label>
+            <label><input type="checkbox" value="одышка"> Одышка</label>
+            <label><input type="checkbox" value="боль_в_груди" class="red-flag"> Боль в груди</label>
+            <label><input type="checkbox" value="тревожность"> Тревожность, нервозность</label>
+            <label><input type="checkbox" value="головная_боль"> Головная боль (новая, сильная)</label>
+            <label><input type="checkbox" value="онемение"> Онемение, покалывание</label>
+            <label><input type="checkbox" value="судороги"> Судороги, мышечные спазмы</label>
+            <label><input type="checkbox" value="частое_мочеиспускание"> Частое мочеиспускание, жажда</label>
+            <label><input type="checkbox" value="отеки"> Отеки (лицо, ноги)</label>
+            <label><input type="checkbox" value="снижение_либидо"> Снижение либидо</label>
+            <label><input type="checkbox" value="проблемы_эрекции"> Проблемы с эрекцией</label>
+            <label><input type="checkbox" value="нарушение_цикла"> Нарушение менструального цикла (жен)</label>
+            <label><input type="checkbox" value="боль_в_животе"> Боль в животе</label>
+            <label><input type="checkbox" value="тошнота"> Тошнота, рвота</label>
+            <label><input type="checkbox" value="изжога"> Изжога</label>
+            <label><input type="checkbox" value="диарея"> Диарея</label>
+            <label><input type="checkbox" value="запоры"> Запоры</label>
+            <label><input type="checkbox" value="частые_простуды"> Частые простуды, герпес</label>
+            <label><input type="checkbox" value="кровь_в_стуле" class="red-flag"> Кровь в стуле</label>
+            <label><input type="checkbox" value="кровь_в_моче" class="red-flag"> Кровь в моче</label>
+            <label><input type="checkbox" value="черный_стул" class="red-flag"> Черный стул</label>
+            <label><input type="checkbox" value="обмороки" class="red-flag"> Обмороки</label>
+            <label><input type="checkbox" value="нарушение_речи" class="red-flag"> Внезапное нарушение речи/движения</label>
+        </div>
+
+        <button class="btn" onclick="showCheckupPlan()">📋 Показать мой план анализов</button>
+        <button id="btnResults" class="btn btn-results" onclick="goToResults()">📋 Посмотреть результаты</button>
+
+        <div id="result"></div>
+        <div id="qrcode"></div>
+        <div class="small-note">
+            ⚕️ Это справочная информация. При тревожных симптомах немедленно обратитесь к врачу.
+        </div>
+    </div>
+
+    <script>
+        const generalSymptoms = new Set([
+            "слабость", "сонливость", "выпадение_волос", "сухая_кожа", "набор_веса", "тяга_к_сладкому"
+        ]);
+
+        const redFlags = new Set([
+            "боль_в_груди", "кровь_в_стуле", "кровь_в_моче", "черный_стул", "обмороки",
+            "нарушение_речи", "потеря_веса", "головная_боль"
+        ]);
+
+        const baseLabTests = [
+            "Общий анализ крови (ОАК) с лейкоформулой",
+            "СОЭ",
+            "С-реактивный белок (СРБ)",
+            "Общий анализ мочи (ОАМ)",
+            "Глюкоза натощак",
+            "Гликированный гемоглобин (HbA1c)",
+            "Общий белок",
+            "Альбумин",
+            "АЛТ",
+            "АСТ",
+            "Билирубин общий",
+            "ГГТ",
+            "Креатинин",
+            "Мочевина",
+            "Липидограмма (холестерин, ЛПНП, ЛПВП, триглицериды)",
+            "ТТГ",
+            "Свободный Т4",
+            "Ферритин",
+            "Железо сывороточное",
+            "Витамин D 25-OH",
+            "Витамин B12",
+            "Фолиевая кислота"
+        ];
+
+        const baseInstrumental = [
+            "ЭКГ",
+            "Флюорография или рентген грудной клетки",
+            "УЗИ органов брюшной полости и почек"
+        ];
+
+        const symptomWeights = {
+            "выпадение_волос": {
+                "Ферритин": 3, "Железо сывороточное": 3, "ОЖСС/трансферрин": 2,
+                "ТТГ": 2, "Свободный Т4": 2, "Витамин D 25-OH": 2,
+                "Витамин B12": 2, "Фолиевая кислота": 2, "Цинк": 2
+            },
+            "сонливость": {
+                "Ферритин": 2, "ТТГ": 2, "Свободный Т4": 2, "Витамин D 25-OH": 1,
+                "Витамин B12": 1, "Глюкоза натощак": 2, "HbA1c": 2
+            },
+            "слабость": {
+                "Общий анализ крови (ОАК) с лейкоформулой": 2, "С-реактивный белок (СРБ)": 1,
+                "Ферритин": 2, "Витамин D 25-OH": 2, "Витамин B12": 2,
+                "Электролиты (Na, K, Cl)": 2, "Креатинин": 1, "АЛТ": 1, "АСТ": 1
+            },
+            "проблемы_эрекции": {
+                "Тестостерон общий": 3, "ГСПГ": 3, "Свободный тестостерон (расчет)": 2,
+                "ЛГ": 2, "ФСГ": 2, "Пролактин": 2, "HbA1c": 2,
+                "Липидограмма (холестерин, ЛПНП, ЛПВП, триглицериды)": 2,
+                "Глюкоза натощак": 2, "Инсулин натощак": 2
+            },
+            "снижение_либидо": {
+                "Тестостерон общий": 2, "ГСПГ": 2, "Пролактин": 2,
+                "ТТГ": 2, "Свободный Т4": 2, "Витамин D 25-OH": 1
+            },
+            "набор_веса": {
+                "ТТГ": 3, "Свободный Т4": 3, "Глюкоза натощак": 2,
+                "HbA1c": 2, "Инсулин натощак": 2,
+                "Липидограмма (холестерин, ЛПНП, ЛПВП, триглицериды)": 2,
+                "АЛТ": 2, "АСТ": 2, "Мочевая кислота": 1
+            },
+            "тяга_к_сладкому": {
+                "Глюкоза натощак": 3, "HbA1c": 3, "Инсулин натощак": 3,
+                "Липидограмма (холестерин, ЛПНП, ЛПВП, триглицериды)": 2
+            },
+            "потеря_веса": {
+                "Общий анализ крови (ОАК) с лейкоформулой": 2, "СОЭ": 2,
+                "С-реактивный белок (СРБ)": 2, "ТТГ": 3, "Свободный Т4": 3,
+                "Свободный Т3": 2, "Глюкоза натощак": 2, "HbA1c": 2,
+                "АЛТ": 1, "АСТ": 1, "Билирубин общий": 1, "Креатинин": 1
+            },
+            "сердцебиение": {
+                "ТТГ": 3, "Свободный Т4": 3, "Свободный Т3": 2,
+                "Общий анализ крови (ОАК) с лейкоформулой": 2, "Ферритин": 2,
+                "Калий (электролиты)": 2, "Магний": 2
+            },
+            "тревожность": {
+                "ТТГ": 3, "Свободный Т4": 3, "Витамин B12": 2,
+                "Витамин D 25-OH": 1, "Ферритин": 1, "Глюкоза натощак": 1
+            },
+            "головная_боль": {
+                "Общий анализ крови (ОАК) с лейкоформулой": 1,
+                "Витамин B12": 1, "Ферритин": 1
+            },
+            "частое_мочеиспускание": {
+                "Глюкоза натощак": 3, "HbA1c": 3, "Общий анализ мочи (ОАМ)": 3,
+                "Креатинин": 2, "Мочевина": 2,
+                "Микроальбумин/креатинин в моче": 2
+            },
+            "отеки": {
+                "Общий анализ мочи (ОАМ)": 3, "Креатинин": 3, "Мочевина": 3,
+                "Общий белок": 2, "Альбумин": 2, "ТТГ": 2, "Свободный Т4": 2,
+                "Электролиты (Na, K, Cl)": 2
+            },
+            "онемение": {
+                "Магний": 3, "Калий (электролиты)": 3, "Кальций общий": 3,
+                "Витамин D 25-OH": 2, "Витамин B12": 2, "Фолиевая кислота": 1,
+                "Глюкоза натощак": 1
+            },
+            "судороги": {
+                "Магний": 3, "Калий (электролиты)": 3, "Кальций общий": 3,
+                "Витамин D 25-OH": 2, "Витамин B12": 2
+            },
+            "частые_простуды": {
+                "Общий анализ крови (ОАК) с лейкоформулой": 3,
+                "С-реактивный белок (СРБ)": 3, "Витамин D 25-OH": 3,
+                "Ферритин": 2, "Иммуноглобулины IgA, IgM, IgG": 2
+            },
+            "боль_в_животе": {
+                "Общий анализ крови (ОАК) с лейкоформулой": 2,
+                "С-реактивный белок (СРБ)": 2,
+                "АЛТ": 2, "АСТ": 2, "Билирубин общий": 2, "ГГТ": 2,
+                "Амилаза/липаза": 2, "Копрограмма": 2, "Кальпротектин в кале": 2,
+                "Анализ кала на скрытую кровь": 2
+            },
+            "тошнота": {
+                "АЛТ": 2, "АСТ": 2, "Билирубин общий": 2, "ГГТ": 2,
+                "Амилаза/липаза": 2, "Копрограмма": 1
+            },
+            "изжога": {
+                "H. pylori (антиген в кале)": 3, "АЛТ": 1, "АСТ": 1
+            },
+            "диарея": {
+                "Копрограмма": 3, "Кальпротектин в кале": 3,
+                "Анализ кала на скрытую кровь": 2,
+                "Антитела к тканевой трансглутаминазе IgA": 2,
+                "Общий IgA": 2
+            },
+            "запоры": {
+                "Копрограмма": 2, "ТТГ": 2, "Анализ кала на скрытую кровь": 1
+            },
+            "одышка": {
+                "Общий анализ крови (ОАК) с лейкоформулой": 2, "Ферритин": 2,
+                "ТТГ": 1, "ЭКГ": 3
+            },
+            "боль_в_груди": {
+                "ЭКГ": 3, "Тропониновый тест": 3, "Липидограмма": 2,
+                "Коагулограмма": 2
+            },
+            "нарушение_цикла": {
+                "Тестостерон общий": 2, "ГСПГ": 2, "ЛГ": 2, "ФСГ": 2,
+                "Пролактин": 2, "Эстрадиол": 2, "ТТГ": 2,
+                "Свободный Т4": 2, "ДГЭА-С": 1, "Андростендион": 1
+            }
+        };
+
+        let lastPlan = null;
+
+        function showCheckupPlan() {
+            const checkedBoxes = document.querySelectorAll('#symptoms-list input[type=checkbox]:checked');
+            const selectedSymptoms = Array.from(checkedBoxes).map(cb => cb.value);
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            const age = parseInt(document.getElementById('ageInput').value, 10) || 30;
+
+            if (selectedSymptoms.length === 0) {
+                alert("Пожалуйста, выберите хотя бы один симптом.");
+                return;
+            }
+
+            const hasRedFlag = selectedSymptoms.some(s => redFlags.has(s));
+            const scores = {};
+            const generalCount = selectedSymptoms.filter(s => generalSymptoms.has(s)).length;
+            const addBaseCheckup = generalCount >= 2;
+
+            if (addBaseCheckup) {
+                baseLabTests.forEach(test => scores[test] = (scores[test] || 0) + 10);
+                baseInstrumental.forEach(test => scores[test] = (scores[test] || 0) + 10);
+            }
+
+            selectedSymptoms.forEach(symptom => {
+                const weights = symptomWeights[symptom];
+                if (weights) {
+                    Object.entries(weights).forEach(([analysis, weight]) => {
+                        scores[analysis] = (scores[analysis] || 0) + weight;
+                    });
+                }
+            });
+
+            if (selectedSymptoms.includes("боль_в_груди") || selectedSymptoms.includes("одышка") || selectedSymptoms.includes("сердцебиение")) {
+                scores["ЭКГ"] = (scores["ЭКГ"] || 0) + 5;
+            }
+            if (selectedSymptoms.includes("кашель") || selectedSymptoms.includes("одышка") || selectedSymptoms.includes("боль_в_груди")) {
+                scores["Флюорография или рентген грудной клетки"] = (scores["Флюорография или рентген грудной клетки"] || 0) + 5;
+            }
+            if (selectedSymptoms.some(s => ["боль_в_животе", "тошнота", "диарея", "запоры", "изжога"].includes(s))) {
+                scores["УЗИ органов брюшной полости и почек"] = (scores["УЗИ органов брюшной полости и почек"] || 0) + 5;
+            }
+
+            const minimal = new Set();
+            const recommended = new Set();
+            const optional = new Set();
+
+            Object.entries(scores).forEach(([analysis, weight]) => {
+                if (weight >= 10 || weight >= 4) minimal.add(analysis);
+                else if (weight >= 2) recommended.add(analysis);
+                else if (weight >= 1) optional.add(analysis);
+            });
+
+            recommended.forEach(a => { if (minimal.has(a)) recommended.delete(a); });
+            optional.forEach(a => { if (minimal.has(a) || recommended.has(a)) optional.delete(a); });
+
+            if (gender === 'female' && age >= 21) {
+                optional.add("Мазок на онкоцитологию (PAP-тест)");
+                optional.add("УЗИ органов малого таза и молочных желез");
+            }
+            if (gender === 'male' && age >= 40) {
+                optional.add("ПСА общий (простатспецифический антиген)");
+            }
+
+            const allTests = Array.from(new Set([...minimal, ...recommended, ...optional])).sort();
+
+            lastPlan = {
+                gender: gender,
+                age: age,
+                symptoms: selectedSymptoms,
+                tests: allTests
+            };
+            sessionStorage.setItem('checkupPlan', JSON.stringify(lastPlan));
+
+            const resultDiv = document.getElementById('result');
+            let html = '';
+            if (hasRedFlag) {
+                html += `<div class="alert-red">🔴 Обнаружены тревожные симптомы! Не откладывайте визит к врачу. Ниже приведён справочный план анализов, но он не заменяет срочную медицинскую помощь.</div>`;
+            }
+            html += `<h3>📋 Ваш персональный план обследований</h3>`;
+
+            const formatList = (set) => {
+                if (set.size === 0) return '<p style="margin-left:20px;">Нет дополнительных позиций.</p>';
+                return `<ul class="block-list">${Array.from(set).sort().map(item => `<li>${item}</li>`).join('')}</ul>`;
+            };
+
+            html += `<div class="block-title">✅ Обязательный минимум (сдать в первую очередь)</div>`;
+            html += formatList(minimal);
+            html += `<div class="block-title">👍 Рекомендуемые дополнительные анализы</div>`;
+            html += formatList(recommended);
+            html += `<div class="block-title">💡 По ситуации / обсудить с врачом</div>`;
+            html += formatList(optional);
+            html += `<hr><p style="margin-top:10px;"><em>План сформирован на основе ваших симптомов, пола и возраста. Для окончательного решения необходима очная консультация врача.</em></p>`;
+            resultDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+
+            // Генерация QR-кода с защитой
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            try {
+                const payload = JSON.stringify(lastPlan);
+                const url = `results.html?data=${encodeURIComponent(payload)}`;
+                if (typeof QRCode !== 'undefined') {
+                    new QRCode(qrContainer, {
+                        text: url,
+                        width: 128,
+                        height: 128,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                }
+            } catch (e) {
+                console.warn('QR-код не сгенерирован:', e);
+            }
+
+            // Показываем кнопку "Посмотреть результаты" в любом случае
+            document.getElementById('btnResults').style.display = 'block';
+        }
+
+        function goToResults() {
+            window.location.href = 'results.html';
+        }
+    </script>
+</body>
+</html>
