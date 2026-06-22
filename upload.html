@@ -7,7 +7,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
@@ -60,6 +59,9 @@
             border-radius: 14px;
             margin: 20px 0;
             font-weight: 500;
+        }
+        .section-title {
+            font-weight: 700; font-size: 17px; margin: 24px 0 10px; color: #1a1a2e;
         }
         .result-row {
             display: flex;
@@ -146,7 +148,39 @@
     </div>
 
     <script>
-        // === Нормы, правила и карта добавок (как в results.html) ===
+        // === Нормы с синонимами ===
+        const testSynonyms = {
+            "Глюкоза натощак": ["глюкоза", "glucose", "сахар"],
+            "Гликированный гемоглобин (HbA1c)": ["гликированный", "hba1c", "a1c"],
+            "Общий холестерин": ["холестерин общий", "холестерин", "cholesterol"],
+            "ЛПНП": ["лпнп", "ldl", "липопротеины низкой"],
+            "ЛПВП": ["лпвп", "hdl", "липопротеины высокой"],
+            "Триглицериды": ["триглицериды", "triglycerides"],
+            "ТТГ": ["ттг", "tsh", "тиреотропный"],
+            "Свободный Т4": ["свободный т4", "т4 свободный", "ft4", "тироксин свободный"],
+            "Ферритин": ["ферритин", "ferritin"],
+            "Железо сывороточное": ["железо", "iron", "fe"],
+            "Витамин D 25-OH": ["витамин d", "25-oh", "витамин д", "25(oh)"],
+            "Витамин B12": ["витамин b12", "витамин в12", "b12", "цианокобаламин"],
+            "Фолиевая кислота": ["фолиевая", "фолат", "folic"],
+            "Креатинин": ["креатинин", "creatinine"],
+            "Мочевина": ["мочевина", "urea"],
+            "АЛТ": ["алт", "alt", "аланинаминотрансфераза"],
+            "АСТ": ["аст", "ast", "аспартатаминотрансфераза"],
+            "Билирубин общий": ["билирубин общий", "общий билирубин", "bilirubin total"],
+            "Общий белок": ["общий белок", "total protein"],
+            "Альбумин": ["альбумин", "albumin"],
+            "Магний": ["магний", "magnesium", "mg"],
+            "Калий": ["калий", "potassium", "k\\+"],
+            "Натрий": ["натрий", "sodium", "na\\+"],
+            "Кальций общий": ["кальций общий", "кальций", "calcium"],
+            "Цинк": ["цинк", "zinc", "zn"],
+            "Тестостерон общий": ["тестостерон общий", "тестостерон", "testosterone"],
+            "Пролактин": ["пролактин", "prolactin"],
+            "Инсулин натощак": ["инсулин", "insulin"],
+            "ПСА общий": ["пса", "psa", "простатспецифический"]
+        };
+
         const norms = {
             "Глюкоза натощак": { min: 3.3, max: 5.5, unit: "ммоль/л" },
             "Гликированный гемоглобин (HbA1c)": { min: 4.0, max: 6.0, unit: "%" },
@@ -156,12 +190,13 @@
             "Триглицериды": { min: 0.5, max: 1.7, unit: "ммоль/л" },
             "ТТГ": { min: 0.4, max: 4.0, unit: "мМЕ/л" },
             "Свободный Т4": { min: 10, max: 22, unit: "пмоль/л" },
-            "Ферритин": { min: 20, max: 250, unit: "нг/мл", genderDep: true },
+            "Ферритин": { min: 20, max: 250, unit: "нг/мл" },
             "Железо сывороточное": { min: 10, max: 30, unit: "мкмоль/л" },
             "Витамин D 25-OH": { min: 30, max: 100, unit: "нг/мл" },
             "Витамин B12": { min: 180, max: 900, unit: "пг/мл" },
             "Фолиевая кислота": { min: 3, max: 17, unit: "нг/мл" },
-            "Креатинин": { min: 50, max: 110, unit: "мкмоль/л", genderDep: true },
+            "Креатинин": { min: 50, max: 110, unit: "мкмоль/л" },
+            "Мочевина": { min: 2.5, max: 8.3, unit: "ммоль/л" },
             "АЛТ": { min: 0, max: 40, unit: "Ед/л" },
             "АСТ": { min: 0, max: 40, unit: "Ед/л" },
             "Билирубин общий": { min: 3.4, max: 17.1, unit: "мкмоль/л" },
@@ -172,45 +207,45 @@
             "Натрий": { min: 135, max: 145, unit: "ммоль/л" },
             "Кальций общий": { min: 2.15, max: 2.55, unit: "ммоль/л" },
             "Цинк": { min: 10, max: 18, unit: "мкмоль/л" },
-            "Тестостерон общий": { min: 8, max: 35, unit: "нмоль/л", genderDep: true },
-            "Пролактин": { min: 50, max: 400, unit: "мЕд/л", genderDep: true },
+            "Тестостерон общий": { min: 8, max: 35, unit: "нмоль/л" },
+            "Пролактин": { min: 50, max: 400, unit: "мЕд/л" },
             "Инсулин натощак": { min: 2.6, max: 24.9, unit: "мкЕд/мл" },
-            "ПСА общий": { min: 0, max: 4.0, unit: "нг/мл", gender: "male" }
+            "ПСА общий": { min: 0, max: 4.0, unit: "нг/мл" }
         };
 
         const diagnosticRules = [
-            { id: 1, name: "Железодефицитная анемия", danger: "medium", doctors: ["Терапевт", "Гематолог"], symptoms: [], results: { "Ферритин": "low", "Железо сывороточное": "low" } },
-            { id: 2, name: "Гипотиреоз", danger: "medium", doctors: ["Эндокринолог"], symptoms: [], results: { "ТТГ": "high", "Свободный Т4": "low" } },
-            { id: 3, name: "Гипертиреоз", danger: "high", doctors: ["Эндокринолог"], symptoms: [], results: { "ТТГ": "low", "Свободный Т4": "high" } },
-            { id: 4, name: "Сахарный диабет (подозрение)", danger: "high", doctors: ["Эндокринолог", "Терапевт"], symptoms: [], results: { "Глюкоза натощак": "high", "HbA1c": "high" } },
-            { id: 5, name: "Дефицит витамина D", danger: "low", doctors: ["Терапевт"], symptoms: [], results: { "Витамин D 25-OH": "low" } },
-            { id: 6, name: "Гипогонадизм (низкий тестостерон)", danger: "medium", doctors: ["Уролог", "Андролог", "Эндокринолог"], symptoms: [], results: { "Тестостерон общий": "low" } },
-            { id: 7, name: "Поражение печени", danger: "high", doctors: ["Гастроэнтеролог", "Гепатолог"], symptoms: [], results: { "АЛТ": "high", "АСТ": "high" } },
-            { id: 8, name: "Хроническая болезнь почек", danger: "high", doctors: ["Нефролог", "Терапевт"], symptoms: [], results: { "Креатинин": "high", "Мочевина": "high" } },
-            { id: 9, name: "Дефицит витамина B12", danger: "low", doctors: ["Терапевт", "Невролог"], symptoms: [], results: { "Витамин B12": "low" } },
-            { id: 10, name: "Гиперпролактинемия", danger: "medium", doctors: ["Эндокринолог", "Гинеколог"], symptoms: [], results: { "Пролактин": "high" } }
+            { id: 1, name: "Железодефицитная анемия", danger: "medium", doctors: ["Терапевт", "Гематолог"], results: { "Ферритин": "low", "Железо сывороточное": "low" } },
+            { id: 2, name: "Гипотиреоз", danger: "medium", doctors: ["Эндокринолог"], results: { "ТТГ": "high", "Свободный Т4": "low" } },
+            { id: 3, name: "Гипертиреоз", danger: "high", doctors: ["Эндокринолог"], results: { "ТТГ": "low", "Свободный Т4": "high" } },
+            { id: 4, name: "Сахарный диабет (подозрение)", danger: "high", doctors: ["Эндокринолог", "Терапевт"], results: { "Глюкоза натощак": "high", "HbA1c": "high" } },
+            { id: 5, name: "Дефицит витамина D", danger: "low", doctors: ["Терапевт"], results: { "Витамин D 25-OH": "low" } },
+            { id: 6, name: "Гипогонадизм (низкий тестостерон)", danger: "medium", doctors: ["Уролог", "Андролог", "Эндокринолог"], results: { "Тестостерон общий": "low" } },
+            { id: 7, name: "Поражение печени", danger: "high", doctors: ["Гастроэнтеролог", "Гепатолог"], results: { "АЛТ": "high", "АСТ": "high" } },
+            { id: 8, name: "Хроническая болезнь почек (подозрение)", danger: "high", doctors: ["Нефролог", "Терапевт"], results: { "Креатинин": "high" } },
+            { id: 9, name: "Дефицит витамина B12", danger: "low", doctors: ["Терапевт", "Невролог"], results: { "Витамин B12": "low" } },
+            { id: 10, name: "Гиперпролактинемия", danger: "medium", doctors: ["Эндокринолог", "Гинеколог"], results: { "Пролактин": "high" } }
         ];
 
         const supplementMap = {
-            "Витамин D 25-OH": { low: { supplement: "Витамин D3 2000–4000 МЕ/сут", doctors: ["Терапевт"], duration: "2–3 месяца", danger: "low", note: "Поддерживает иммунитет и кости." } },
+            "Витамин D 25-OH": { low: { supplement: "Витамин D3 2000–4000 МЕ/сут", doctors: ["Терапевт"], duration: "2–3 месяца, затем контроль анализа", danger: "low", note: "Поддерживает иммунитет и кости." } },
             "Витамин B12": { low: { supplement: "Витамин B12 1000–2000 мкг/сут", doctors: ["Терапевт", "Невролог"], duration: "1–2 месяца", danger: "low", note: "Необходим для нервной системы." } },
             "Фолиевая кислота": { low: { supplement: "Фолиевая кислота 400–800 мкг/сут", doctors: ["Терапевт"], duration: "1–2 месяца", danger: "low", note: "Важна для кроветворения." } },
-            "Ферритин": { low: { supplement: "Препараты железа (по назначению врача)", doctors: ["Терапевт", "Гематолог"], duration: "1–2 месяца", danger: "medium", note: "Скрытый железодефицит." } },
+            "Ферритин": { low: { supplement: "Препараты железа (по назначению врача)", doctors: ["Терапевт", "Гематолог"], duration: "1–2 месяца под контролем анализов", danger: "medium", note: "Скрытый железодефицит." } },
             "Железо сывороточное": { low: { supplement: "Препараты железа", doctors: ["Терапевт", "Гематолог"], duration: "1–2 месяца", danger: "medium", note: "Может потребоваться доп. диагностика." } },
             "Магний": { low: { supplement: "Магний 300–400 мг/сут", doctors: ["Терапевт"], duration: "1–2 месяца", danger: "low", note: "От судорог и утомляемости." } },
             "Кальций общий": { low: { supplement: "Кальций 500–1000 мг/сут", doctors: ["Терапевт"], duration: "1–3 месяца", danger: "low", note: "Для костей и мышц." } },
             "Цинк": { low: { supplement: "Цинк 15–30 мг/сут", doctors: ["Терапевт"], duration: "1–2 месяца", danger: "low", note: "Иммунитет, кожа, волосы." } },
-            "Тестостерон общий": { low: { supplement: "Гормональная терапия под контролем врача", doctors: ["Уролог", "Андролог", "Эндокринолог"], duration: "длительно", danger: "medium", note: "Не корректировать самостоятельно." } },
+            "Тестостерон общий": { low: { supplement: "Гормональная терапия под контролем врача", doctors: ["Уролог", "Андролог", "Эндокринолог"], duration: "длительно, по схеме врача", danger: "medium", note: "Не корректировать самостоятельно." } },
             "Глюкоза натощак": { high: { supplement: "Контроль углеводов, консультация эндокринолога", doctors: ["Эндокринолог", "Терапевт"], duration: "постоянный контроль", danger: "high", note: "Риск диабета." } },
             "HbA1c": { high: { supplement: "Строгая диета, наблюдение эндокринолога", doctors: ["Эндокринолог", "Терапевт"], duration: "контроль каждые 3 мес.", danger: "high", note: "Долгосрочный сахар." } },
             "ТТГ": {
-                high: { supplement: "Лечение гипотиреоза (тироксин)", doctors: ["Эндокринолог"], duration: "длительно", danger: "medium", note: "Гипотиреоз." },
+                high: { supplement: "Лечение гипотиреоза (тироксин)", doctors: ["Эндокринолог"], duration: "длительно, под контролем ТТГ", danger: "medium", note: "Гипотиреоз." },
                 low: { supplement: "Обследование щитовидной железы", doctors: ["Эндокринолог"], duration: "по результатам", danger: "high", note: "Гипертиреоз опасен для сердца." }
             },
-            "АЛТ": { high: { supplement: "Гепатопротекторы только по назначению врача", doctors: ["Гастроэнтеролог", "Гепатолог"], duration: "до нормализации", danger: "high", note: "Повреждение печени." } },
-            "АСТ": { high: { supplement: "Аналогично АЛТ", doctors: ["Гастроэнтеролог", "Кардиолог"], duration: "до нормализации", danger: "high", note: "Повреждение печени или сердца." } },
-            "Креатинин": { high: { supplement: "Срочно к нефрологу", doctors: ["Нефролог", "Терапевт"], duration: "постоянный мониторинг", danger: "high", note: "Снижение функции почек." } },
-            "Альбумин": { low: { supplement: "Белковое питание, консультация гастроэнтеролога", doctors: ["Гастроэнтеролог", "Терапевт"], duration: "до восстановления", danger: "medium", note: "Проблемы с печенью или почками." } }
+            "АЛТ": { high: { supplement: "Гепатопротекторы только по назначению врача", doctors: ["Гастроэнтеролог", "Гепатолог", "Терапевт"], duration: "до нормализации ферментов", danger: "high", note: "Повреждение печени." } },
+            "АСТ": { high: { supplement: "Аналогично АЛТ — консультация гастроэнтеролога", doctors: ["Гастроэнтеролог", "Кардиолог"], duration: "до нормализации ферментов", danger: "high", note: "Повреждение печени или сердца." } },
+            "Креатинин": { high: { supplement: "Срочно к нефрологу/терапевту", doctors: ["Нефролог", "Терапевт"], duration: "постоянный мониторинг", danger: "high", note: "Снижение функции почек." } },
+            "Альбумин": { low: { supplement: "Белковое питание, консультация гастроэнтеролога", doctors: ["Гастроэнтеролог", "Терапевт"], duration: "до восстановления уровня", danger: "medium", note: "Проблемы с печенью или почками." } }
         };
 
         let selectedFile = null;
@@ -261,22 +296,37 @@
 
         function parseAnalysisText(text) {
             const results = {};
-            for (const [testName, norm] of Object.entries(norms)) {
-                const escapedName = testName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-                const unitStr = norm.unit ? norm.unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
-                const regex = new RegExp(`${escapedName}[\\s:]*([0-9]+[.,]?[0-9]*)\\s*${unitStr}?`, 'i');
-                const match = text.match(regex);
-                if (match) {
-                    let value = parseFloat(match[1].replace(',', '.'));
-                    if (!isNaN(value)) {
-                        let min = norm.min, max = norm.max;
-                        let status = 'normal';
-                        if (value < min) status = 'low';
-                        else if (value > max) status = 'high';
-                        results[testName] = { value, unit: norm.unit, status };
+
+            for (const [testName, synonyms] of Object.entries(testSynonyms)) {
+                const norm = norms[testName];
+                if (!norm) continue;
+
+                let found = false;
+                let value = null;
+
+                // Ищем каждый синоним
+                for (const synonym of synonyms) {
+                    // Ищем строки вида "Синоним ... число"
+                    const regex = new RegExp(`${synonym}[^\\d]*?([0-9]+[.,]?[0-9]*)`, 'i');
+                    const match = text.match(regex);
+                    if (match) {
+                        value = parseFloat(match[1].replace(',', '.'));
+                        if (!isNaN(value)) {
+                            found = true;
+                            break;
+                        }
                     }
                 }
+
+                if (found && value !== null) {
+                    let min = norm.min, max = norm.max;
+                    let status = 'normal';
+                    if (value < min) status = 'low';
+                    else if (value > max) status = 'high';
+                    results[testName] = { value, unit: norm.unit, status };
+                }
             }
+
             return results;
         }
 
@@ -292,21 +342,38 @@
             });
 
             if (matchedRules.length > 0) {
-                let html = '<div class="section-title" style="font-weight:700; font-size:17px; margin:20px 0 10px;">📋 Возможные состояния</div>';
                 const allDoctors = new Set();
-                matchedRules.forEach(rule => {
-                    const dangerEmoji = { low:'🟢', medium:'🟡', high:'🔴', critical:'⚠️' };
-                    html += `<div class="conclusion-card ${rule.danger}">
-                        <strong>${dangerEmoji[rule.danger]} ${rule.name}</strong>
-                        <span>Опасность: ${rule.danger==='low'?'Низкая':rule.danger==='medium'?'Средняя':'Высокая'}</span>
-                    </div>`;
-                    rule.doctors.forEach(d => allDoctors.add(d));
+                matchedRules.forEach(r => r.doctors.forEach(d => allDoctors.add(d)));
+
+                let html = '<div class="section-title">📋 Заключение по анализам</div>';
+                const grouped = { high: [], medium: [], low: [] };
+                matchedRules.forEach(r => {
+                    if (r.danger === 'high' || r.danger === 'critical') grouped.high.push(r);
+                    else if (r.danger === 'medium') grouped.medium.push(r);
+                    else grouped.low.push(r);
                 });
-                html += `<div class="overall-box"><strong>👨‍⚕️ Рекомендуемые врачи:</strong> ${[...allDoctors].join(', ')}</div>`;
+
+                if (grouped.high.length) {
+                    html += `<div class="section-title">🔴 Что критически — высокая угроза</div>`;
+                    grouped.high.forEach(r => html += `<div class="conclusion-card high"><strong>🔴 ${r.name}</strong><br>Опасность: Высокая</div>`);
+                }
+                if (grouped.medium.length) {
+                    html += `<div class="section-title">🟡 Что требует внимания — средняя угроза</div>`;
+                    grouped.medium.forEach(r => html += `<div class="conclusion-card medium"><strong>🟡 ${r.name}</strong><br>Опасность: Средняя</div>`);
+                }
+                if (grouped.low.length) {
+                    html += `<div class="section-title">🟢 Низкий риск</div>`;
+                    grouped.low.forEach(r => html += `<div class="conclusion-card low"><strong>🟢 ${r.name}</strong><br>Опасность: Низкая</div>`);
+                }
+
+                html += `<div class="overall-box">
+                    <strong>👨‍⚕️ К каким врачам обращаться:</strong> ${[...allDoctors].join(', ')}
+                </div>`;
                 container.innerHTML = html;
                 return;
             }
 
+            // Рекомендации по отклонениям
             const recommendations = [];
             let maxDanger = 'low';
             const doctorsSet = new Set();
@@ -325,26 +392,48 @@
 
             let html = '';
             if (recommendations.length === 0) {
-                html += '<p>Все показатели в норме – специфических добавок не требуется.</p>';
-                doctorsSet.add("Терапевт");
+                html += '<div class="section-title">📋 Заключение</div>';
+                html += '<p>🎉 Все показатели в норме! Специфических добавок не требуется.</p>';
+                doctorsSet.add("Терапевт (профилактический осмотр)");
             } else {
-                html += '<div class="section-title" style="font-weight:700; font-size:17px; margin:20px 0 10px;">💊 Рекомендации по витаминам</div>';
-                recommendations.forEach(rec => {
-                    const statusText = rec.status === 'low' ? 'Понижен' : 'Повышен';
-                    html += `<div class="supplement-item">
-                        <strong>${rec.test} (${statusText})</strong><br>
-                        💡 Что принимать: ${rec.supplement}<br>
-                        🕒 Длительность: ${rec.duration}<br>
-                        📝 ${rec.note}
-                        <span class="danger-badge danger-${rec.danger}">${rec.danger==='low'?'Низкая угроза':'Высокая угроза'}</span>
-                    </div>`;
+                html += '<div class="section-title">📋 Заключение по анализам</div>';
+                const grouped = { high: [], medium: [], low: [] };
+                recommendations.forEach(r => {
+                    if (r.danger === 'high') grouped.high.push(r);
+                    else if (r.danger === 'medium') grouped.medium.push(r);
+                    else grouped.low.push(r);
                 });
+
+                if (grouped.high.length) {
+                    html += `<div class="section-title">🔴 Что критически — высокая угроза</div>`;
+                    grouped.high.forEach(rec => {
+                        const st = rec.status === 'low' ? 'Понижен' : 'Повышен';
+                        html += `<div class="conclusion-card high"><strong>${rec.test} (${st})</strong><br>💡 ${rec.supplement}<br>🕒 ${rec.duration}<br>📝 ${rec.note}</div>`;
+                    });
+                }
+                if (grouped.medium.length) {
+                    html += `<div class="section-title">🟡 Что требует внимания — средняя угроза</div>`;
+                    grouped.medium.forEach(rec => {
+                        const st = rec.status === 'low' ? 'Понижен' : 'Повышен';
+                        html += `<div class="supplement-item"><strong>${rec.test} (${st})</strong><br>💡 <b>Что пить:</b> ${rec.supplement}<br>🕒 <b>Длительность:</b> ${rec.duration}<br>📝 ${rec.note}<span class="danger-badge danger-medium">Средняя угроза</span></div>`;
+                    });
+                }
+                if (grouped.low.length) {
+                    html += `<div class="section-title">🟢 Низкий риск — можно корректировать</div>`;
+                    grouped.low.forEach(rec => {
+                        const st = rec.status === 'low' ? 'Понижен' : 'Повышен';
+                        html += `<div class="supplement-item"><strong>${rec.test} (${st})</strong><br>💡 <b>Что пить:</b> ${rec.supplement}<br>🕒 <b>Длительность:</b> ${rec.duration}<br>📝 ${rec.note}<span class="danger-badge danger-low">Низкая угроза</span></div>`;
+                    });
+                }
             }
 
-            const overallText = maxDanger === 'high' ? 'Высокая – требуется срочная консультация' : maxDanger === 'medium' ? 'Средняя – визит к специалисту' : 'Низкая – проконсультируйтесь с терапевтом';
+            const overallText = maxDanger === 'high' ? '⚠️ Высокая — требуется срочная консультация врача!' :
+                               maxDanger === 'medium' ? '🟡 Средняя — рекомендуется визит к специалисту' :
+                               '🟢 Низкая — можно корректировать, но консультация терапевта не помешает';
+
             html += `<div class="overall-box">
-                <strong>📊 Общая оценка угрозы:</strong> ${overallText}<br>
-                <strong>👨‍⚕️ Врачи:</strong> ${[...doctorsSet].join(', ')}
+                <strong>📊 Общая оценка угрозы для здоровья:</strong> ${overallText}<br>
+                <strong>👨‍⚕️ К каким врачам обращаться:</strong> ${[...doctorsSet].join(', ')}
             </div>`;
             container.innerHTML = html;
         }
@@ -357,7 +446,7 @@
                 const text = await extractTextFromPDF(selectedFile);
                 const analysisResults = parseAnalysisText(text);
 
-                document.getElementById('patientInfo').innerHTML = `<strong>Пациент:</strong> данные из PDF<br><small>Автоматическое распознавание</small>`;
+                document.getElementById('patientInfo').innerHTML = `<strong>Пациент:</strong> данные из PDF<br><small>Распознано показателей: ${Object.keys(analysisResults).length}</small>`;
                 const listDiv = document.getElementById('resultsList');
                 listDiv.innerHTML = '';
                 for (const [test, data] of Object.entries(analysisResults)) {
