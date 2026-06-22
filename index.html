@@ -266,6 +266,18 @@
             border-radius: 12px;
             display: inline-block;
         }
+        .upload-link {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 15px;
+        }
+        .upload-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -294,6 +306,9 @@
 
         <button class="btn" onclick="showCheckupPlan()">📋 Показать мой план анализов</button>
         <button id="btnResults" class="btn btn-results" onclick="goToResults()">📊 Посмотреть результаты</button>
+
+        <!-- Ссылка на загрузку PDF -->
+        <a href="upload.html" class="upload-link">📄 Загрузить PDF с готовыми анализами</a>
 
         <div id="result"></div>
         <div style="text-align:center;"><div id="qrcode"></div></div>
@@ -344,7 +359,6 @@
 
         let lastPlan = null;
 
-        // ========== Инициализация плиток симптомов ==========
         function buildSymptoms() {
             const container = document.getElementById('symptoms-list');
             container.innerHTML = '';
@@ -355,14 +369,11 @@
                 div.className = 'symptom-tile' + (isRed ? ' red-flag' : '');
                 div.dataset.value = value;
                 div.innerHTML = `<span class="tile-icon">${icon}</span> ${label}`;
-                div.addEventListener('click', () => {
-                    div.classList.toggle('selected');
-                });
+                div.addEventListener('click', () => div.classList.toggle('selected'));
                 container.appendChild(div);
             });
         }
 
-        // ========== Переключатель пола ==========
         document.addEventListener('DOMContentLoaded', () => {
             buildSymptoms();
             const genderDivs = document.querySelectorAll('#genderSelect .gender-option');
@@ -376,13 +387,11 @@
             });
         });
 
-        // ========== Получение выбранных симптомов ==========
         function getSelectedSymptoms() {
             const tiles = document.querySelectorAll('#symptoms-list .symptom-tile.selected');
             return Array.from(tiles).map(t => t.dataset.value);
         }
 
-        // ========== Главная функция ==========
         function showCheckupPlan() {
             const selectedSymptoms = getSelectedSymptoms();
             const gender = document.querySelector('input[name="gender"]').value;
@@ -404,9 +413,7 @@
 
             selectedSymptoms.forEach(symptom => {
                 const weights = symptomWeights[symptom];
-                if (weights) {
-                    Object.entries(weights).forEach(([a, w]) => scores[a] = (scores[a] || 0) + w);
-                }
+                if (weights) Object.entries(weights).forEach(([a, w]) => scores[a] = (scores[a] || 0) + w);
             });
 
             if (selectedSymptoms.some(s => ["боль_в_груди","одышка","сердцебиение"].includes(s))) scores["ЭКГ"] = (scores["ЭКГ"] || 0) + 5;
