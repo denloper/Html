@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка анализов PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 35px;
+            max-width: 750px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+        }
+        h1 { font-size: 28px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+        .subtitle { color: #6b7280; margin-bottom: 30px; font-size: 15px; }
+        .upload-area {
+            border: 2px dashed #c7d2fe;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            background: #f8faff;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-area:hover { border-color: #667eea; background: #eef0ff; }
+        .upload-area input { display: none; }
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 12px;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .patient-card {
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-radius: 14px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9fafb;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+        .result-name { flex: 2; font-weight: 600; color: #1f2937; }
+        .result-value { flex: 1; text-align: center; font-weight: 700; font-size: 15px; }
+        .badge-normal { background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 20px; font-weight: 700; }
+        .badge-low { background: #ffedd5; color: #9a3412; padding: 4px 10px; border-radius: 20px; font-weight: 700; }
+        .badge-high { background: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 20px; font-weight: 700; }
+        .conclusion-card {
+            background: #fffbeb;
+            border-left: 5px solid #f59e0b;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        .conclusion-card.critical { background: #fef2f2; border-left-color: #ef4444; }
+        .conclusion-card.high { background: #fff7ed; border-left-color: #f97316; }
+        .conclusion-card.medium { background: #fffbeb; border-left-color: #f59e0b; }
+        .conclusion-card.low { background: #f0fdf4; border-left-color: #10b981; }
+        .supplement-item {
+            background: #f0f9ff;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3b82f6;
+        }
+        .danger-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+        .danger-low { background: #d1fae5; color: #065f46; }
+        .danger-medium { background: #fef3c7; color: #92400e; }
+        .danger-high { background: #fee2e2; color: #991b1b; }
+        .overall-box {
+            margin-top: 18px;
+            padding: 16px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .small-note { margin-top: 14px; font-size: 12px; color: #9ca3af; text-align: center; }
+        a.back-link {
+            display: block;
+            margin-top: 12px;
+            text-align: center;
+            color: #6366f1;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Загрузка анализов из PDF</h1>
+        <p class="subtitle">Загрузите файл с результатами анализов (PDF) — мы расшифруем показатели и дадим заключение</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p style="font-size: 18px; margin-bottom: 10px;">📁 Перетащите PDF сюда или нажмите для выбора</p>
+            <p style="color: #6b7280; font-size: 13px;">Поддерживаются файлы до 10 МБ</p>
+            <input type="file" id="fileInput" accept=".pdf" />
+        </div>
+        <button class="btn" id="analyzeBtn" disabled>🔍 Анализировать</button>
+
+        <div id="loading" style="display:none; text-align:center; margin-top:20px;">⏳ Обрабатываем PDF...</div>
+        <div id="resultsContainer" style="display:none;">
+            <div class="patient-card" id="patientInfo"></div>
+            <div id="resultsList"></div>
+            <div id="conclusion"></div>
+        </div>
+
+        <div class="small-note">⚕️ Автоматическая расшифровка. При неточностях сверяйтесь с оригиналом.</div>
+        <a class="back-link" href="index.html">← Вернуться на главную</a>
+    </div>
+
+    <script>
+        // === Нормы, правила и карта добавок (как в results.html) ===
+        const norms = {
+            "Глюкоза натощак": { min: 3.3, max: 5.5, unit: "ммоль/л" },
+            "Гликированный гемоглобин (HbA1c)": { min: 4.0, max: 6.0, unit: "%" },
+            "Общий холестерин": { min: 3.0, max: 5.2, unit: "ммоль/л" },
+            "ЛПНП": { min: 0, max: 3.0, unit: "ммоль/л" },
+            "ЛПВП": { min: 1.0, max: 2.0, unit: "ммоль/л" },
+            "Триглицериды": { min: 0.5, max: 1.7, unit: "ммоль/л" },
+            "ТТГ": { min: 0.4, max: 4.0, unit: "мМЕ/л" },
+            "Свободный Т4": { min: 10, max: 22, unit: "пмоль/л" },
+            "Ферритин": { min: 20, max: 250, unit: "нг/мл", genderDep: true },
+            "Железо сывороточное": { min: 10, max: 30, unit: "мкмоль/л" },
+            "Витамин D 25-OH": { min: 30, max: 100, unit: "нг/мл" },
+            "Витамин B12": { min: 180, max: 900, unit: "пг/мл" },
+            "Фолиевая кислота": { min: 3, max: 17, unit: "нг/мл" },
+            "Креатинин": { min: 50, max: 110, unit: "мкмоль/л", genderDep: true },
+            "АЛТ": { min: 0, max: 40, unit: "Ед/л" },
+            "АСТ": { min: 0, max: 40, unit: "Ед/л" },
+            "Билирубин общий": { min: 3.4, max: 17.1, unit: "мкмоль/л" },
+            "Общий белок": { min: 65, max: 85, unit: "г/л" },
+            "Альбумин": { min: 35, max: 50, unit: "г/л" },
+            "Магний": { min: 0.75, max: 1.25, unit: "ммоль/л" },
+            "Калий": { min: 3.5, max: 5.1, unit: "ммоль/л" },
+            "Натрий": { min: 135, max: 145, unit: "ммоль/л" },
+            "Кальций общий": { min: 2.15, max: 2.55, unit: "ммоль/л" },
+            "Цинк": { min: 10, max: 18, unit: "мкмоль/л" },
+            "Тестостерон общий": { min: 8, max: 35, unit: "нмоль/л", genderDep: true },
+            "Пролактин": { min: 50, max: 400, unit: "мЕд/л", genderDep: true },
+            "Инсулин натощак": { min: 2.6, max: 24.9, unit: "мкЕд/мл" },
+            "ПСА общий": { min: 0, max: 4.0, unit: "нг/мл", gender: "male" }
+        };
+
+        const diagnosticRules = [
+            { id: 1, name: "Железодефицитная анемия", danger: "medium", doctors: ["Терапевт", "Гематолог"], symptoms: [], results: { "Ферритин": "low", "Железо сывороточное": "low" } },
+            { id: 2, name: "Гипотиреоз", danger: "medium", doctors: ["Эндокринолог"], symptoms: [], results: { "ТТГ": "high", "Свободный Т4": "low" } },
+            { id: 3, name: "Гипертиреоз", danger: "high", doctors: ["Эндокринолог"], symptoms: [], results: { "ТТГ": "low", "Свободный Т4": "high" } },
+            { id: 4, name: "Сахарный диабет (подозрение)", danger: "high", doctors: ["Эндокринолог", "Терапевт"], symptoms: [], results: { "Глюкоза натощак": "high", "HbA1c": "high" } },
+            { id: 5, name: "Дефицит витамина D", danger: "low", doctors: ["Терапевт"], symptoms: [], results: { "Витамин D 25-OH": "low" } },
+            { id: 6, name: "Гипогонадизм (низкий тестостерон)", danger: "medium", doctors: ["Уролог", "Андролог", "Эндокринолог"], symptoms: [], results: { "Тестостерон общий": "low" } },
+            { id: 7, name: "Поражение печени", danger: "high", doctors: ["Гастроэнтеролог", "Гепатолог"], symptoms: [], results: { "АЛТ": "high", "АСТ": "high" } },
+            { id: 8, name: "Хроническая болезнь почек", danger: "high", doctors: ["Нефролог", "Терапевт"], symptoms: [], results: { "Креатинин": "high", "Мочевина": "high" } },
+            { id: 9, name: "Дефицит витамина B12", danger: "low", doctors: ["Терапевт", "Невролог"], symptoms: [], results: { "Витамин B12": "low" } },
+            { id: 10, name: "Гиперпролактинемия", danger: "medium", doctors: ["Эндокринолог", "Гинеколог"], symptoms: [], results: { "Пролактин": "high" } }
+        ];
+
+        const supplementMap = {
+            "Витамин D 25-OH": { low: { supplement: "Витамин D3 2000–4000 МЕ/сут", doctors: ["Терапевт"], duration: "2–3 месяца", danger: "low", note: "Поддерживает иммунитет и кости." } },
+            "Витамин B12": { low: { supplement: "Витамин B12 1000–2000 мкг/сут", doctors: ["Терапевт", "Невролог"], duration: "1–2 месяца", danger: "low", note: "Необходим для нервной системы." } },
+            "Фолиевая кислота": { low: { supplement: "Фолиевая кислота 400–800 мкг/сут", doctors: ["Терапевт"], duration: "1–2 месяца", danger: "low", note: "Важна для кроветворения." } },
+            "Ферритин": { low: { supplement: "Препараты железа (по назначению врача)", doctors: ["Терапевт", "Гематолог"], duration: "1–2 месяца", danger: "medium", note: "Скрытый железодефицит." } },
+            "Железо сывороточное": { low: { supplement: "Препараты железа", doctors: ["Терапевт", "Гематолог"], duration: "1–2 месяца", danger: "medium", note: "Может потребоваться доп. диагностика." } },
+            "Магний": { low: { supplement: "Магний 300–400 мг/сут", doctors: ["Терапевт"], duration: "1–2 месяца", danger: "low", note: "От судорог и утомляемости." } },
+            "Кальций общий": { low: { supplement: "Кальций 500–1000 мг/сут", doctors: ["Терапевт"], duration: "1–3 месяца", danger: "low", note: "Для костей и мышц." } },
+            "Цинк": { low: { supplement: "Цинк 15–30 мг/сут", doctors: ["Терапевт"], duration: "1–2 месяца", danger: "low", note: "Иммунитет, кожа, волосы." } },
+            "Тестостерон общий": { low: { supplement: "Гормональная терапия под контролем врача", doctors: ["Уролог", "Андролог", "Эндокринолог"], duration: "длительно", danger: "medium", note: "Не корректировать самостоятельно." } },
+            "Глюкоза натощак": { high: { supplement: "Контроль углеводов, консультация эндокринолога", doctors: ["Эндокринолог", "Терапевт"], duration: "постоянный контроль", danger: "high", note: "Риск диабета." } },
+            "HbA1c": { high: { supplement: "Строгая диета, наблюдение эндокринолога", doctors: ["Эндокринолог", "Терапевт"], duration: "контроль каждые 3 мес.", danger: "high", note: "Долгосрочный сахар." } },
+            "ТТГ": {
+                high: { supplement: "Лечение гипотиреоза (тироксин)", doctors: ["Эндокринолог"], duration: "длительно", danger: "medium", note: "Гипотиреоз." },
+                low: { supplement: "Обследование щитовидной железы", doctors: ["Эндокринолог"], duration: "по результатам", danger: "high", note: "Гипертиреоз опасен для сердца." }
+            },
+            "АЛТ": { high: { supplement: "Гепатопротекторы только по назначению врача", doctors: ["Гастроэнтеролог", "Гепатолог"], duration: "до нормализации", danger: "high", note: "Повреждение печени." } },
+            "АСТ": { high: { supplement: "Аналогично АЛТ", doctors: ["Гастроэнтеролог", "Кардиолог"], duration: "до нормализации", danger: "high", note: "Повреждение печени или сердца." } },
+            "Креатинин": { high: { supplement: "Срочно к нефрологу", doctors: ["Нефролог", "Терапевт"], duration: "постоянный мониторинг", danger: "high", note: "Снижение функции почек." } },
+            "Альбумин": { low: { supplement: "Белковое питание, консультация гастроэнтеролога", doctors: ["Гастроэнтеролог", "Терапевт"], duration: "до восстановления", danger: "medium", note: "Проблемы с печенью или почками." } }
+        };
+
+        let selectedFile = null;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loadingDiv = document.getElementById('loading');
+        const resultsContainer = document.getElementById('resultsContainer');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#667eea'; });
+        uploadArea.addEventListener('dragleave', () => uploadArea.style.borderColor = '#c7d2fe');
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#c7d2fe';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file && file.type === 'application/pdf') {
+                selectedFile = file;
+                analyzeBtn.disabled = false;
+            } else {
+                alert('Пожалуйста, выберите PDF-файл.');
+                analyzeBtn.disabled = true;
+            }
+        }
+
+        async function extractTextFromPDF(file) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += pageText + '\n';
+            }
+            return fullText;
+        }
+
+        function parseAnalysisText(text) {
+            const results = {};
+            for (const [testName, norm] of Object.entries(norms)) {
+                const escapedName = testName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const unitStr = norm.unit ? norm.unit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+                const regex = new RegExp(`${escapedName}[\\s:]*([0-9]+[.,]?[0-9]*)\\s*${unitStr}?`, 'i');
+                const match = text.match(regex);
+                if (match) {
+                    let value = parseFloat(match[1].replace(',', '.'));
+                    if (!isNaN(value)) {
+                        let min = norm.min, max = norm.max;
+                        let status = 'normal';
+                        if (value < min) status = 'low';
+                        else if (value > max) status = 'high';
+                        results[testName] = { value, unit: norm.unit, status };
+                    }
+                }
+            }
+            return results;
+        }
+
+        function generateConclusion(analysisResults) {
+            const container = document.getElementById('conclusion');
+            const resultsMap = {};
+            for (const [test, data] of Object.entries(analysisResults)) {
+                resultsMap[test] = data.status;
+            }
+
+            const matchedRules = diagnosticRules.filter(rule => {
+                return Object.entries(rule.results).every(([test, dir]) => resultsMap[test] === dir);
+            });
+
+            if (matchedRules.length > 0) {
+                let html = '<div class="section-title" style="font-weight:700; font-size:17px; margin:20px 0 10px;">📋 Возможные состояния</div>';
+                const allDoctors = new Set();
+                matchedRules.forEach(rule => {
+                    const dangerEmoji = { low:'🟢', medium:'🟡', high:'🔴', critical:'⚠️' };
+                    html += `<div class="conclusion-card ${rule.danger}">
+                        <strong>${dangerEmoji[rule.danger]} ${rule.name}</strong>
+                        <span>Опасность: ${rule.danger==='low'?'Низкая':rule.danger==='medium'?'Средняя':'Высокая'}</span>
+                    </div>`;
+                    rule.doctors.forEach(d => allDoctors.add(d));
+                });
+                html += `<div class="overall-box"><strong>👨‍⚕️ Рекомендуемые врачи:</strong> ${[...allDoctors].join(', ')}</div>`;
+                container.innerHTML = html;
+                return;
+            }
+
+            const recommendations = [];
+            let maxDanger = 'low';
+            const doctorsSet = new Set();
+
+            for (const [test, data] of Object.entries(analysisResults)) {
+                if (data.status === 'normal') continue;
+                const mapping = supplementMap[test];
+                if (!mapping) continue;
+                const dirInfo = mapping[data.status];
+                if (!dirInfo) continue;
+                recommendations.push({ test, ...dirInfo, status: data.status });
+                dirInfo.doctors.forEach(d => doctorsSet.add(d));
+                if (dirInfo.danger === 'high') maxDanger = 'high';
+                else if (dirInfo.danger === 'medium' && maxDanger !== 'high') maxDanger = 'medium';
+            }
+
+            let html = '';
+            if (recommendations.length === 0) {
+                html += '<p>Все показатели в норме – специфических добавок не требуется.</p>';
+                doctorsSet.add("Терапевт");
+            } else {
+                html += '<div class="section-title" style="font-weight:700; font-size:17px; margin:20px 0 10px;">💊 Рекомендации по витаминам</div>';
+                recommendations.forEach(rec => {
+                    const statusText = rec.status === 'low' ? 'Понижен' : 'Повышен';
+                    html += `<div class="supplement-item">
+                        <strong>${rec.test} (${statusText})</strong><br>
+                        💡 Что принимать: ${rec.supplement}<br>
+                        🕒 Длительность: ${rec.duration}<br>
+                        📝 ${rec.note}
+                        <span class="danger-badge danger-${rec.danger}">${rec.danger==='low'?'Низкая угроза':'Высокая угроза'}</span>
+                    </div>`;
+                });
+            }
+
+            const overallText = maxDanger === 'high' ? 'Высокая – требуется срочная консультация' : maxDanger === 'medium' ? 'Средняя – визит к специалисту' : 'Низкая – проконсультируйтесь с терапевтом';
+            html += `<div class="overall-box">
+                <strong>📊 Общая оценка угрозы:</strong> ${overallText}<br>
+                <strong>👨‍⚕️ Врачи:</strong> ${[...doctorsSet].join(', ')}
+            </div>`;
+            container.innerHTML = html;
+        }
+
+        async function analyzePDF() {
+            if (!selectedFile) return;
+            loadingDiv.style.display = 'block';
+            resultsContainer.style.display = 'none';
+            try {
+                const text = await extractTextFromPDF(selectedFile);
+                const analysisResults = parseAnalysisText(text);
+
+                document.getElementById('patientInfo').innerHTML = `<strong>Пациент:</strong> данные из PDF<br><small>Автоматическое распознавание</small>`;
+                const listDiv = document.getElementById('resultsList');
+                listDiv.innerHTML = '';
+                for (const [test, data] of Object.entries(analysisResults)) {
+                    const statusClass = data.status === 'normal' ? 'badge-normal' : (data.status === 'low' ? 'badge-low' : 'badge-high');
+                    const statusText = data.status === 'normal' ? 'Норма' : (data.status === 'low' ? 'Понижен' : 'Повышен');
+                    listDiv.innerHTML += `<div class="result-row">
+                        <span class="result-name">${test}</span>
+                        <span class="result-value">${data.value} ${data.unit}</span>
+                        <span class="${statusClass}">${statusText}</span>
+                    </div>`;
+                }
+                generateConclusion(analysisResults);
+                resultsContainer.style.display = 'block';
+            } catch (error) {
+                alert('Ошибка при обработке PDF: ' + error.message);
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        analyzeBtn.addEventListener('click', analyzePDF);
+    </script>
+</body>
+</html>
