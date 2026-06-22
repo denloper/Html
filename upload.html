@@ -148,7 +148,7 @@
     </div>
 
     <script>
-        // === Нормы с синонимами ===
+        // === Синонимы анализов ===
         const testSynonyms = {
             "Глюкоза натощак": ["глюкоза", "glucose", "сахар"],
             "Гликированный гемоглобин (HbA1c)": ["гликированный", "hba1c", "a1c"],
@@ -159,7 +159,7 @@
             "ТТГ": ["ттг", "tsh", "тиреотропный"],
             "Свободный Т4": ["свободный т4", "т4 свободный", "ft4", "тироксин свободный"],
             "Ферритин": ["ферритин", "ferritin"],
-            "Железо сывороточное": ["железо", "iron", "fe"],
+            "Железо сывороточное": ["железо", "iron", "fe сыв"],
             "Витамин D 25-OH": ["витамин d", "25-oh", "витамин д", "25(oh)"],
             "Витамин B12": ["витамин b12", "витамин в12", "b12", "цианокобаламин"],
             "Фолиевая кислота": ["фолиевая", "фолат", "folic"],
@@ -248,6 +248,14 @@
             "Альбумин": { low: { supplement: "Белковое питание, консультация гастроэнтеролога", doctors: ["Гастроэнтеролог", "Терапевт"], duration: "до восстановления уровня", danger: "medium", note: "Проблемы с печенью или почками." } }
         };
 
+        // Профилактические рекомендации (даже когда всё в норме)
+        const preventiveRecommendations = [
+            { supplement: "Витамин D3 1000–2000 МЕ/сут", doctors: ["Терапевт"], duration: "1–2 месяца в осенне-зимний период", note: "Для поддержания иммунитета и костей (профилактика)." },
+            { supplement: "Магний (цитрат) 200–300 мг/сут", doctors: ["Терапевт"], duration: "1 месяц, курс 2–3 раза в год", note: "От стресса, утомляемости и для улучшения сна." },
+            { supplement: "Омега-3 1000–2000 мг/сут", doctors: ["Терапевт", "Кардиолог"], duration: "постоянно или курсами по 3 месяца", note: "Для сердца, сосудов и мозга." },
+            { supplement: "Витамин С 500 мг/сут", doctors: ["Терапевт"], duration: "курсами по 1–2 месяца", note: "Антиоксидант, поддержка иммунитета." }
+        ];
+
         let selectedFile = null;
 
         const uploadArea = document.getElementById('uploadArea');
@@ -304,14 +312,12 @@
                 let found = false;
                 let value = null;
 
-                // Ищем каждый синоним
                 for (const synonym of synonyms) {
-                    // Ищем строки вида "Синоним ... число"
                     const regex = new RegExp(`${synonym}[^\\d]*?([0-9]+[.,]?[0-9]*)`, 'i');
                     const match = text.match(regex);
                     if (match) {
                         value = parseFloat(match[1].replace(',', '.'));
-                        if (!isNaN(value)) {
+                        if (!isNaN(value) && value > 0) {
                             found = true;
                             break;
                         }
@@ -373,7 +379,7 @@
                 return;
             }
 
-            // Рекомендации по отклонениям
+            // === Рекомендации по отклонениям ===
             const recommendations = [];
             let maxDanger = 'low';
             const doctorsSet = new Set();
@@ -393,8 +399,18 @@
             let html = '';
             if (recommendations.length === 0) {
                 html += '<div class="section-title">📋 Заключение</div>';
-                html += '<p>🎉 Все показатели в норме! Специфических добавок не требуется.</p>';
-                doctorsSet.add("Терапевт (профилактический осмотр)");
+                html += '<p>🎉 Все показатели в норме! Отклонений не выявлено.</p>';
+
+                // Показываем профилактические рекомендации
+                html += '<div class="section-title">💊 Профилактические рекомендации (для поддержания здоровья)</div>';
+                preventiveRecommendations.forEach(rec => {
+                    html += `<div class="supplement-item">
+                        <strong>🟢 ${rec.supplement}</strong><br>
+                        🕒 <b>Длительность:</b> ${rec.duration}<br>
+                        📝 ${rec.note}
+                    </div>`;
+                });
+                doctorsSet.add("Терапевт (профилактический осмотр раз в год)");
             } else {
                 html += '<div class="section-title">📋 Заключение по анализам</div>';
                 const grouped = { high: [], medium: [], low: [] };
@@ -429,7 +445,7 @@
 
             const overallText = maxDanger === 'high' ? '⚠️ Высокая — требуется срочная консультация врача!' :
                                maxDanger === 'medium' ? '🟡 Средняя — рекомендуется визит к специалисту' :
-                               '🟢 Низкая — можно корректировать, но консультация терапевта не помешает';
+                               '🟢 Низкая — показатели в норме';
 
             html += `<div class="overall-box">
                 <strong>📊 Общая оценка угрозы для здоровья:</strong> ${overallText}<br>
