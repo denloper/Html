@@ -3,203 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Динамика анализов — сравнение</title>
+    <title>Динамика анализов — сравнение и рекомендации</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
-            background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 100%);
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            background: white;
-            border-radius: 24px;
-            padding: 35px;
-            max-width: 800px;
-            width: 100%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.08);
-        }
-        h1 { font-size: 28px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: white; border-radius: 24px; padding: 35px; max-width: 800px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.08); }
+        h1 { font-size: 28px; font-weight: 800; color: #1a1a2e; }
         .subtitle { color: #6b7280; margin-bottom: 30px; font-size: 15px; }
+        .profile-row { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+        .profile-field label { font-weight: 700; font-size: 13px; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
+        .gender-options { display: flex; gap: 0; background: #f3f4f6; border-radius: 14px; padding: 5px; border: 2px solid #e5e7eb; }
+        .gender-option { flex: 1; text-align: center; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; color: #6b7280; transition: all 0.2s; }
+        .gender-option.selected { background: white; color: #1a1a2e; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-weight: 700; }
+        input[type="number"] { width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid #e5e7eb; font-size: 15px; background: #f9fafb; }
         .upload-row { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
-        .upload-box {
-            flex: 1;
-            min-width: 200px;
-            border: 2px dashed #c7d2fe;
-            border-radius: 16px;
-            padding: 30px;
-            text-align: center;
-            background: #f8faff;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .upload-box:hover { border-color: #667eea; background: #eef0ff; }
+        .upload-box { flex: 1; min-width: 200px; border: 2px dashed #c7d2fe; border-radius: 16px; padding: 30px; text-align: center; background: #f8faff; cursor: pointer; }
         .upload-box.loaded { border-color: #10b981; background: #f0fdf4; }
         .upload-box input { display: none; }
-        .upload-box .label { font-weight: 700; font-size: 14px; color: #374151; margin-bottom: 8px; }
-        .upload-box .filename { font-size: 12px; color: #6b7280; margin-top: 6px; }
-        .btn {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: 16px;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 12px;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
+        .btn { width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 12px; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .section-title {
-            font-weight: 700; font-size: 17px; margin: 24px 0 10px; color: #1a1a2e;
-        }
-        .compare-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f9fafb;
-            padding: 14px 18px;
-            border-radius: 12px;
-            margin-bottom: 8px;
-        }
-        .compare-name { flex: 2; font-weight: 600; color: #1f2937; }
+        .section-title { font-weight: 700; font-size: 17px; margin: 24px 0 10px; color: #1a1a2e; }
+        .compare-row { display: flex; justify-content: space-between; align-items: center; background: #f9fafb; padding: 14px 18px; border-radius: 12px; margin-bottom: 8px; }
+        .compare-name { flex: 2; font-weight: 600; }
         .compare-values { flex: 2; text-align: center; }
         .compare-old { color: #6b7280; font-size: 13px; }
-        .compare-new { font-weight: 700; font-size: 15px; }
+        .compare-new { font-weight: 700; }
         .compare-arrow { flex: 0.5; text-align: center; font-size: 20px; }
-        .arrow-up { color: #10b981; }
-        .arrow-down { color: #ef4444; }
-        .arrow-same { color: #6b7280; }
+        .arrow-up { color: #10b981; } .arrow-down { color: #ef4444; }
         .badge-improved { background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px; }
-        .badge-worsened { background: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px; }
-        .badge-stable { background: #f3f4f6; color: #6b7280; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px; }
-        .overall-box {
-            margin-top: 18px;
-            padding: 16px;
-            background: #f1f5f9;
-            border-radius: 12px;
-            font-weight: 600;
-        }
+        .badge-worsened { background: #fee2e2; color: #991b1b; }
+        .badge-stable { background: #f3f4f6; color: #6b7280; }
+        .badge-new { background: #dbeafe; color: #1e40af; }
+        .badge-changed { background: #e0f2fe; color: #0c4a6e; }
+        .overall-box { margin-top: 18px; padding: 16px; background: #f1f5f9; border-radius: 12px; font-weight: 600; }
+        .conclusion-card { background: #fffbeb; border-left: 5px solid #f59e0b; padding: 16px; border-radius: 12px; margin-bottom: 12px; }
+        .supplement-item { background: #f0f9ff; padding: 14px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #3b82f6; }
         .small-note { margin-top: 14px; font-size: 12px; color: #9ca3af; text-align: center; }
-        a.back-link {
-            display: block;
-            margin-top: 12px;
-            text-align: center;
-            color: #6366f1;
-            text-decoration: none;
-            font-weight: 600;
-        }
+        a.back-link { display: block; margin-top: 12px; text-align: center; color: #6366f1; text-decoration: none; font-weight: 600; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📈 Динамика анализов</h1>
-        <p class="subtitle">Загрузите два PDF-файла (старый и новый) — мы покажем, как изменились показатели</p>
-
+        <p class="subtitle">Загрузите два PDF-файла (старый и новый) — мы покажем изменения и дадим рекомендации</p>
+        <div id="patientInfoBox" class="patient-card" style="display:none;"></div>
+        <div id="manualInputBox">
+            <div class="profile-row">
+                <div class="profile-field">
+                    <label>Пол</label>
+                    <div class="gender-options" id="genderSelect">
+                        <div class="gender-option selected" data-value="female">👩 Женский</div>
+                        <div class="gender-option" data-value="male">👨 Мужской</div>
+                    </div>
+                    <input type="hidden" name="gender" value="female">
+                </div>
+                <div class="profile-field">
+                    <label for="ageInput">Возраст</label>
+                    <input type="number" id="ageInput" placeholder="Введите возраст" min="0" max="120" value="30">
+                </div>
+            </div>
+        </div>
         <div class="upload-row">
             <div class="upload-box" id="uploadOld">
                 <div class="label">📄 Старый анализ</div>
-                <p style="font-size:13px;color:#6b7280;">Дата: раньше</p>
                 <p class="filename" id="oldFilename"></p>
                 <input type="file" id="oldFileInput" accept=".pdf" />
             </div>
             <div class="upload-box" id="uploadNew">
                 <div class="label">📄 Новый анализ</div>
-                <p style="font-size:13px;color:#6b7280;">Дата: позже</p>
                 <p class="filename" id="newFilename"></p>
                 <input type="file" id="newFileInput" accept=".pdf" />
             </div>
         </div>
-
         <button class="btn" id="compareBtn" disabled>🔍 Сравнить анализы</button>
-
-        <div id="loading" style="display:none; text-align:center; margin-top:20px;">⏳ Обрабатываем PDF...</div>
+        <div id="loading" style="display:none;">⏳ Обрабатываем PDF...</div>
         <div id="resultsContainer" style="display:none;">
             <div id="comparisonList"></div>
             <div id="summary"></div>
+            <div id="conclusion"></div>
         </div>
-
         <div class="small-note">⚕️ Автоматическое сравнение. При неточностях сверяйтесь с оригиналами.</div>
         <a class="back-link" href="index.html">← Вернуться на главную</a>
     </div>
 
+    <script src="database.js"></script>
     <script>
-        // Синонимы анализов (те же, что в upload.html)
-        const testSynonyms = {
-            "Глюкоза натощак": ["глюкоза", "glucose", "сахар"],
-            "Гликированный гемоглобин (HbA1c)": ["гликированный", "hba1c", "a1c"],
-            "Общий холестерин": ["холестерин общий", "холестерин", "cholesterol"],
-            "ЛПНП": ["лпнп", "ldl", "липопротеины низкой"],
-            "ЛПВП": ["лпвп", "hdl", "липопротеины высокой"],
-            "Триглицериды": ["триглицериды", "triglycerides"],
-            "ТТГ": ["ттг", "tsh", "тиреотропный"],
-            "Свободный Т4": ["свободный т4", "т4 свободный", "ft4", "тироксин свободный"],
-            "Ферритин": ["ферритин", "ferritin"],
-            "Железо сывороточное": ["железо", "iron", "fe"],
-            "Витамин D 25-OH": ["витамин d", "25-oh", "витамин д", "25(oh)"],
-            "Витамин B12": ["витамин b12", "витамин в12", "b12", "цианокобаламин"],
-            "Фолиевая кислота": ["фолиевая", "фолат", "folic"],
-            "Креатинин": ["креатинин", "creatinine"],
-            "Мочевина": ["мочевина", "urea"],
-            "АЛТ": ["алт", "alt", "аланинаминотрансфераза"],
-            "АСТ": ["аст", "ast", "аспартатаминотрансфераза"],
-            "Билирубин общий": ["билирубин общий", "общий билирубин", "bilirubin"],
-            "Общий белок": ["общий белок", "total protein"],
-            "Альбумин": ["альбумин", "albumin"],
-            "Магний": ["магний", "magnesium", "mg"],
-            "Калий": ["калий", "potassium", "k\\+"],
-            "Натрий": ["натрий", "sodium", "na\\+"],
-            "Кальций общий": ["кальций общий", "кальций", "calcium"],
-            "Цинк": ["цинк", "zinc", "zn"],
-            "Тестостерон общий": ["тестостерон общий", "тестостерон", "testosterone"],
-            "Пролактин": ["пролактин", "prolactin"],
-            "Инсулин натощак": ["инсулин", "insulin"],
-            "ПСА общий": ["пса", "psa", "простатспецифический"]
-        };
+        const genderInput = document.querySelector('input[name="gender"]');
+        const ageInput = document.getElementById('ageInput');
+        const patientInfoBox = document.getElementById('patientInfoBox');
+        const manualInputBox = document.getElementById('manualInputBox');
 
-        const norms = {
-            "Глюкоза натощак": { min: 3.3, max: 5.5, unit: "ммоль/л" },
-            "Гликированный гемоглобин (HbA1c)": { min: 4.0, max: 6.0, unit: "%" },
-            "Общий холестерин": { min: 3.0, max: 5.2, unit: "ммоль/л" },
-            "ЛПНП": { min: 0, max: 3.0, unit: "ммоль/л" },
-            "ЛПВП": { min: 1.0, max: 2.0, unit: "ммоль/л" },
-            "Триглицериды": { min: 0.5, max: 1.7, unit: "ммоль/л" },
-            "ТТГ": { min: 0.4, max: 4.0, unit: "мМЕ/л" },
-            "Свободный Т4": { min: 10, max: 22, unit: "пмоль/л" },
-            "Ферритин": { min: 20, max: 250, unit: "нг/мл" },
-            "Железо сывороточное": { min: 10, max: 30, unit: "мкмоль/л" },
-            "Витамин D 25-OH": { min: 30, max: 100, unit: "нг/мл" },
-            "Витамин B12": { min: 180, max: 900, unit: "пг/мл" },
-            "Фолиевая кислота": { min: 3, max: 17, unit: "нг/мл" },
-            "Креатинин": { min: 50, max: 110, unit: "мкмоль/л" },
-            "Мочевина": { min: 2.5, max: 8.3, unit: "ммоль/л" },
-            "АЛТ": { min: 0, max: 40, unit: "Ед/л" },
-            "АСТ": { min: 0, max: 40, unit: "Ед/л" },
-            "Билирубин общий": { min: 3.4, max: 17.1, unit: "мкмоль/л" },
-            "Общий белок": { min: 65, max: 85, unit: "г/л" },
-            "Альбумин": { min: 35, max: 50, unit: "г/л" },
-            "Магний": { min: 0.75, max: 1.25, unit: "ммоль/л" },
-            "Калий": { min: 3.5, max: 5.1, unit: "ммоль/л" },
-            "Натрий": { min: 135, max: 145, unit: "ммоль/л" },
-            "Кальций общий": { min: 2.15, max: 2.55, unit: "ммоль/л" },
-            "Цинк": { min: 10, max: 18, unit: "мкмоль/л" },
-            "Тестостерон общий": { min: 8, max: 35, unit: "нмоль/л" },
-            "Пролактин": { min: 50, max: 400, unit: "мЕд/л" },
-            "Инсулин натощак": { min: 2.6, max: 24.9, unit: "мкЕд/мл" },
-            "ПСА общий": { min: 0, max: 4.0, unit: "нг/мл" }
-        };
+        document.querySelectorAll('#genderSelect .gender-option').forEach(div => {
+            div.addEventListener('click', () => {
+                document.querySelectorAll('#genderSelect .gender-option').forEach(d => d.classList.remove('selected'));
+                div.classList.add('selected');
+                genderInput.value = div.dataset.value;
+            });
+        });
 
         let oldFile = null, newFile = null;
-
-        // Старый файл
         document.getElementById('uploadOld').addEventListener('click', () => document.getElementById('oldFileInput').click());
         document.getElementById('oldFileInput').addEventListener('change', function() {
             oldFile = this.files[0];
@@ -209,8 +113,6 @@
             }
             checkReady();
         });
-
-        // Новый файл
         document.getElementById('uploadNew').addEventListener('click', () => document.getElementById('newFileInput').click());
         document.getElementById('newFileInput').addEventListener('change', function() {
             newFile = this.files[0];
@@ -233,113 +135,244 @@
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
-                const pageText = textContent.items.map(item => item.str).join(' ');
-                fullText += pageText + '\n';
+                const items = textContent.items;
+                const lines = [];
+                let currentLine = [];
+                let lastY = null;
+                for (const item of items) {
+                    const y = Math.round(item.transform[5] * 10) / 10;
+                    if (lastY !== null && Math.abs(y - lastY) > 2) {
+                        lines.push(currentLine.map(it => it.str).join(' '));
+                        currentLine = [];
+                    }
+                    currentLine.push(item);
+                    lastY = y;
+                }
+                if (currentLine.length > 0) lines.push(currentLine.map(it => it.str).join(' '));
+                fullText += lines.join('\n') + '\n';
             }
             return fullText;
         }
 
-        function parseText(text) {
+        function extractPatientInfo(text) {
+            const lowerText = text.toLowerCase();
+            let gender = null;
+            let age = null;
+            if (lowerText.includes('пол: мужской') || lowerText.includes('пол мужской') || lowerText.includes('мужской')) {
+                gender = 'male';
+            } else if (lowerText.includes('пол: женский') || lowerText.includes('пол женский') || lowerText.includes('женский')) {
+                gender = 'female';
+            }
+            const ageMatch = text.match(/\((\d{1,3})\s*(?:год|г|лет|года|г\.)/i);
+            if (ageMatch) {
+                age = parseInt(ageMatch[1], 10);
+            } else {
+                const ageMatch2 = text.match(/(?:возраст|age)\s*:?\s*(\d{1,3})/i);
+                if (ageMatch2) age = parseInt(ageMatch2[1], 10);
+            }
+            const birthMatch = text.match(/дата рождения\s*:?\s*(\d{2})[.\-](\d{2})[.\-](\d{4})/i);
+            if (birthMatch && !age) {
+                const day = parseInt(birthMatch[1]);
+                const month = parseInt(birthMatch[2]);
+                const year = parseInt(birthMatch[3]);
+                const birthDate = new Date(year, month - 1, day);
+                const today = new Date();
+                age = today.getFullYear() - birthDate.getFullYear();
+                if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+            }
+            return { gender, age };
+        }
+
+        function parseText(text, patientSex, patientAge) {
+            const lines = text.split('\n');
             const results = {};
-            for (const [testName, synonyms] of Object.entries(testSynonyms)) {
-                for (const synonym of synonyms) {
-                    const regex = new RegExp(`${synonym}[^\\d]*?([0-9]+[.,]?[0-9]*)`, 'i');
-                    const match = text.match(regex);
-                    if (match) {
-                        const value = parseFloat(match[1].replace(',', '.'));
-                        if (!isNaN(value) && value > 0) {
-                            results[testName] = { value, unit: norms[testName]?.unit || '' };
-                            break;
-                        }
-                    }
+            const usedTests = new Set();
+            for (let i = 0; i < lines.length; i++) {
+                const test = window.findTestByAlias(lines[i]);
+                if (!test || usedTests.has(test.canonicalName)) continue;
+                let valueInfo = window.extractNumericResult(lines[i], test, patientSex, patientAge);
+                if (!valueInfo && i + 1 < lines.length) {
+                    valueInfo = window.extractNumericResult(lines[i + 1], test, patientSex, patientAge);
+                }
+                if (valueInfo) {
+                    results[test.canonicalName] = valueInfo;
+                    usedTests.add(test.canonicalName);
                 }
             }
             return results;
         }
 
+        function generateConclusion(analysisResults) {
+            const container = document.getElementById('conclusion');
+            if (!analysisResults || Object.keys(analysisResults).length === 0) {
+                container.innerHTML = '<p>Нет данных для заключения.</p>';
+                return;
+            }
+            const resultsMap = {};
+            const totalCount = Object.keys(analysisResults).length;
+            let abnormalCount = 0;
+            for (const [name, data] of Object.entries(analysisResults)) {
+                resultsMap[name] = data.status;
+                if (data.status !== 'normal') abnormalCount++;
+            }
+
+            const matchedRules = window.diagnosticRules.filter(rule =>
+                Object.entries(rule.results).every(([test, dir]) => resultsMap[test] === dir)
+            );
+
+            let maxDanger = 'low';
+            const allDoctors = new Set();
+            let html = `<div class="section-title">📋 Заключение по новому анализу</div>`;
+            html += `<p>🔢 <b>Всего показателей:</b> ${totalCount} | <b>Отклонений:</b> ${abnormalCount}</p>`;
+
+            if (matchedRules.length > 0) {
+                const grouped = { high: [], medium: [], low: [] };
+                matchedRules.forEach(r => {
+                    if (r.danger === 'high') grouped.high.push(r);
+                    else if (r.danger === 'medium') grouped.medium.push(r);
+                    else grouped.low.push(r);
+                    r.doctors.forEach(d => allDoctors.add(d));
+                    if (r.danger === 'high') maxDanger = 'high';
+                    else if (r.danger === 'medium' && maxDanger !== 'high') maxDanger = 'medium';
+                });
+                if (grouped.high.length) {
+                    html += `<div class="section-title">🔴 Что критически</div>`;
+                    grouped.high.forEach(r => html += `<div class="conclusion-card high"><strong>🔴 ${r.name}</strong></div>`);
+                }
+                if (grouped.medium.length) {
+                    html += `<div class="section-title">🟡 Что требует внимания</div>`;
+                    grouped.medium.forEach(r => html += `<div class="conclusion-card medium"><strong>🟡 ${r.name}</strong></div>`);
+                }
+                if (grouped.low.length) {
+                    html += `<div class="section-title">🟢 Низкий риск</div>`;
+                    grouped.low.forEach(r => html += `<div class="conclusion-card low"><strong>🟢 ${r.name}</strong></div>`);
+                }
+            }
+
+            const recommendations = [];
+            for (const [name, data] of Object.entries(analysisResults)) {
+                if (data.status === 'normal') continue;
+                const mapping = window.supplementMap[name];
+                if (!mapping) continue;
+                const dirInfo = mapping[data.status];
+                if (!dirInfo) continue;
+                recommendations.push({ test: name, ...dirInfo, status: data.status });
+                dirInfo.doctors.forEach(d => allDoctors.add(d));
+                if (dirInfo.danger === 'high') maxDanger = 'high';
+                else if (dirInfo.danger === 'medium' && maxDanger !== 'high') maxDanger = 'medium';
+            }
+
+            if (recommendations.length > 0) {
+                html += '<div class="section-title">💊 Рекомендации</div>';
+                recommendations.forEach(rec => {
+                    const st = rec.status === 'low' ? 'Понижен' : 'Повышен';
+                    html += `<div class="supplement-item"><strong>${rec.test} (${st})</strong><br>
+                        📝 <b>Что это значит:</b> ${rec.description || 'Нет описания'}<br>
+                        ⚠️ <b>Опасность:</b> ${rec.dangerDesc || rec.note || 'Оценивается врачом'}<br>
+                        💡 <b>Рекомендация:</b> ${rec.supplement}<br>
+                        🕒 <b>Длительность:</b> ${rec.duration}<br>
+                        👨‍⚕️ <b>Врач:</b> ${rec.doctors.join(', ')}
+                        <span class="danger-badge danger-${rec.danger}">${rec.danger==='low'?'Низкая угроза':'Высокая угроза'}</span></div>`;
+                });
+            } else {
+                html += '<div class="section-title">💊 Профилактические рекомендации</div>';
+                window.preventiveRecommendations.forEach(rec => {
+                    html += `<div class="supplement-item"><strong>🟢 ${rec.supplement}</strong><br>
+                        🕒 ${rec.duration}<br>
+                        📝 ${rec.note || ''}</div>`;
+                });
+                allDoctors.add("Терапевт");
+            }
+
+            const overallText = maxDanger === 'high' ? '⚠️ Высокая — требуется срочная консультация врача!' :
+                               maxDanger === 'medium' ? '🟡 Средняя — рекомендуется визит к специалисту' :
+                               '🟢 Низкая — показатели в норме';
+            html += `<div class="overall-box">
+                <strong>📊 Общая оценка угрозы:</strong> ${overallText}<br>
+                <strong>👨‍⚕️ Врачи:</strong> ${[...allDoctors].join(', ')}
+            </div>`;
+            container.innerHTML = html;
+        }
+
         async function comparePDFs() {
             if (!oldFile || !newFile) return;
-
             document.getElementById('loading').style.display = 'block';
             document.getElementById('resultsContainer').style.display = 'none';
-
             try {
                 const oldText = await extractTextFromPDF(oldFile);
                 const newText = await extractTextFromPDF(newFile);
-                const oldResults = parseText(oldText);
-                const newResults = parseText(newText);
 
-                // Объединяем все найденные анализы
+                let patientInfo = extractPatientInfo(newText);
+                if (!patientInfo.gender || !patientInfo.age) {
+                    patientInfo = extractPatientInfo(oldText);
+                }
+
+                let patientSex = patientInfo.gender;
+                let patientAge = patientInfo.age;
+
+                if (patientSex && patientAge) {
+                    patientInfoBox.innerHTML = `👤 <b>Пациент:</b> ${patientSex==='male'?'Мужчина':'Женщина'}, ${patientAge} лет (определено автоматически)`;
+                    patientInfoBox.style.display = 'block';
+                    manualInputBox.style.display = 'none';
+                } else {
+                    patientInfoBox.style.display = 'none';
+                    manualInputBox.style.display = 'block';
+                    patientSex = genderInput.value;
+                    patientAge = parseInt(ageInput.value, 10) || 30;
+                }
+
+                const oldResults = parseText(oldText, patientSex, patientAge);
+                const newResults = parseText(newText, patientSex, patientAge);
+
                 const allTests = new Set([...Object.keys(oldResults), ...Object.keys(newResults)]);
                 const comparison = [];
-
                 for (const test of allTests) {
                     const old = oldResults[test];
                     const newer = newResults[test];
-                    const norm = norms[test];
-                    if (!norm || !newer) continue; // показываем только если есть в новом
-
-                    const change = old ? newer.value - old.value : null;
-                    let direction = 'stable';
-                    let significance = '';
-
-                    if (old && Math.abs(change) > 0.01) {
-                        // Определяем значимость изменения
-                        const oldStatus = old.value < norm.min ? 'low' : (old.value > norm.max ? 'high' : 'normal');
-                        const newStatus = newer.value < norm.min ? 'low' : (newer.value > norm.max ? 'high' : 'normal');
-
+                    if (!newer) continue;
+                    const oldValue = old ? old.value : null;
+                    const change = oldValue !== null ? newer.value - oldValue : null;
+                    let direction = 'stable', badge = '';
+                    if (oldValue !== null && Math.abs(change) > 0.01) {
+                        const oldStatus = old.status;
+                        const newStatus = newer.status;
                         if (oldStatus !== newStatus) {
                             direction = newStatus === 'normal' ? 'improved' : 'worsened';
+                            badge = direction === 'improved' ? 'Улучшился' : 'Ухудшился';
                         } else if (newStatus === 'normal' && oldStatus === 'normal') {
-                            direction = Math.abs(change) / norm.min > 0.1 ? 'changed' : 'stable';
+                            direction = Math.abs(change) / old.value > 0.1 ? 'changed' : 'stable';
+                            badge = direction === 'changed' ? 'Изменился' : 'Стабильно';
                         } else {
                             direction = 'stable';
+                            badge = 'Стабильно';
                         }
-
-                        significance = `${change > 0 ? '+' : ''}${change.toFixed(2)} ${norm.unit}`;
+                    } else if (oldValue === null) {
+                        direction = 'new';
+                        badge = 'Новый';
+                    } else {
+                        badge = 'Стабильно';
                     }
-
-                    comparison.push({
-                        test,
-                        oldValue: old ? `${old.value} ${norm.unit}` : '—',
-                        newValue: `${newer.value} ${norm.unit}`,
-                        change,
-                        direction: old ? direction : 'new',
-                        significance
-                    });
+                    comparison.push({ test, oldValue: old ? `${old.value} ${old.unit}` : '—', newValue: `${newer.value} ${newer.unit}`, change, direction, badge });
                 }
 
-                // Сортируем: ухудшения → улучшения → без изменений → новые
                 comparison.sort((a, b) => {
-                    const order = { 'worsened': 0, 'improved': 1, 'changed': 2, 'stable': 3, 'new': 4 };
+                    const order = { 'worsened': 0, 'improved': 1, 'changed': 2, 'new': 3, 'stable': 4 };
                     return order[a.direction] - order[b.direction];
                 });
 
-                // Вывод
                 const listDiv = document.getElementById('comparisonList');
                 let html = '<div class="section-title">📈 Динамика показателей</div>';
-
                 let improved = 0, worsened = 0, stable = 0, newTests = 0;
-
                 comparison.forEach(item => {
-                    let arrow = '→', arrowClass = 'arrow-same', badge = '', badgeClass = 'badge-stable';
-
-                    if (item.direction === 'improved') {
-                        arrow = '↓'; arrowClass = 'arrow-up'; badge = 'Улучшился'; badgeClass = 'badge-improved';
-                        improved++;
-                    } else if (item.direction === 'worsened') {
-                        arrow = '↑'; arrowClass = 'arrow-down'; badge = 'Ухудшился'; badgeClass = 'badge-worsened';
-                        worsened++;
-                    } else if (item.direction === 'changed') {
-                        arrow = item.change > 0 ? '↗' : '↘'; arrowClass = item.change > 0 ? 'arrow-down' : 'arrow-up';
-                        stable++;
-                    } else if (item.direction === 'new') {
-                        newTests++;
-                        badge = 'Новый'; badgeClass = 'badge-stable';
-                    } else {
-                        stable++;
-                    }
-
+                    let arrow = '→', arrowClass = 'arrow-same';
+                    if (item.direction === 'improved') { arrow = '↓'; arrowClass = 'arrow-up'; improved++; }
+                    else if (item.direction === 'worsened') { arrow = '↑'; arrowClass = 'arrow-down'; worsened++; }
+                    else if (item.direction === 'changed') { arrow = item.change > 0 ? '↗' : '↘'; arrowClass = item.change > 0 ? 'arrow-down' : 'arrow-up'; stable++; }
+                    else if (item.direction === 'new') { arrow = '🆕'; arrowClass = 'arrow-same'; newTests++; }
+                    else { stable++; }
+                    const badgeClass = item.direction === 'improved' ? 'badge-improved' : (item.direction === 'worsened' ? 'badge-worsened' : (item.direction === 'changed' ? 'badge-changed' : (item.direction === 'new' ? 'badge-new' : 'badge-stable')));
                     html += `<div class="compare-row">
                         <span class="compare-name">${item.test}</span>
                         <span class="compare-values">
@@ -347,26 +380,22 @@
                             <span class="compare-arrow ${arrowClass}">${arrow}</span>
                             <span class="compare-new">${item.newValue}</span>
                         </span>
-                        <span class="${badgeClass}">${badge || item.significance || ''}</span>
+                        <span class="${badgeClass}">${item.badge}</span>
                     </div>`;
                 });
-
                 listDiv.innerHTML = html;
-
-                // Итоговая сводка
-                const summaryDiv = document.getElementById('summary');
-                summaryDiv.innerHTML = `<div class="overall-box">
+                document.getElementById('summary').innerHTML = `<div class="overall-box">
                     <strong>📊 Сводка изменений:</strong><br>
-                    🟢 Улучшилось: <b>${improved}</b> показателей<br>
-                    🔴 Ухудшилось: <b>${worsened}</b> показателей<br>
-                    ⚪ Без изменений: <b>${stable}</b> показателей<br>
-                    🆕 Новые анализы: <b>${newTests}</b> показателей<br>
-                    <small style="color:#6b7280;">Всего показателей: ${comparison.length}</small>
+                    🟢 Улучшилось: ${improved}<br>
+                    🔴 Ухудшилось: ${worsened}<br>
+                    ⚪ Без изменений: ${stable}<br>
+                    🆕 Новых: ${newTests}
                 </div>`;
 
+                generateConclusion(newResults);
                 document.getElementById('resultsContainer').style.display = 'block';
             } catch (error) {
-                alert('Ошибка при сравнении PDF: ' + error.message);
+                alert('Ошибка: ' + error.message);
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
