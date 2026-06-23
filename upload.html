@@ -8,256 +8,88 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
-            background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 100%);
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            background: white;
-            border-radius: 24px;
-            padding: 35px;
-            max-width: 750px;
-            width: 100%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.08);
-        }
-        h1 { font-size: 28px; font-weight: 800; color: #1a1a2e; margin-bottom: 4px; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #f0fdf4 0%, #dbeafe 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: white; border-radius: 24px; padding: 35px; max-width: 750px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.08); }
+        h1 { font-size: 28px; font-weight: 800; color: #1a1a2e; }
         .subtitle { color: #6b7280; margin-bottom: 30px; font-size: 15px; }
-        .upload-area {
-            border: 2px dashed #c7d2fe;
-            border-radius: 16px;
-            padding: 40px;
-            text-align: center;
-            background: #f8faff;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+        .profile-row { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+        .profile-field label { font-weight: 700; font-size: 13px; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
+        .gender-options { display: flex; gap: 0; background: #f3f4f6; border-radius: 14px; padding: 5px; border: 2px solid #e5e7eb; }
+        .gender-option { flex: 1; text-align: center; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 15px; color: #6b7280; transition: all 0.2s; }
+        .gender-option.selected { background: white; color: #1a1a2e; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-weight: 700; }
+        input[type="number"] { width: 100%; padding: 14px 16px; border-radius: 14px; border: 2px solid #e5e7eb; font-size: 15px; background: #f9fafb; }
+        .upload-area { border: 2px dashed #c7d2fe; border-radius: 16px; padding: 40px; text-align: center; background: #f8faff; cursor: pointer; margin-bottom: 20px; }
         .upload-area:hover { border-color: #667eea; background: #eef0ff; }
         .upload-area input { display: none; }
-        .btn {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: 16px;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 12px;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
+        .btn { width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 12px; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .patient-card {
-            background: #f8fafc;
-            padding: 16px 20px;
-            border-radius: 14px;
-            margin: 20px 0;
-            font-weight: 500;
-        }
-        .section-title {
-            font-weight: 700; font-size: 17px; margin: 24px 0 10px; color: #1a1a2e;
-        }
-        .result-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f9fafb;
-            padding: 14px 18px;
-            border-radius: 12px;
-            margin-bottom: 8px;
-        }
-        .result-name { flex: 2; font-weight: 600; color: #1f2937; }
-        .result-value { flex: 1; text-align: center; font-weight: 700; font-size: 15px; }
+        .patient-card { background: #f8fafc; padding: 16px 20px; border-radius: 14px; margin: 20px 0; }
+        .section-title { font-weight: 700; font-size: 17px; margin: 24px 0 10px; color: #1a1a2e; }
+        .result-row { display: flex; justify-content: space-between; align-items: center; background: #f9fafb; padding: 14px 18px; border-radius: 12px; margin-bottom: 8px; }
+        .result-name { flex: 2; font-weight: 600; }
+        .result-value { flex: 1; text-align: center; font-weight: 700; }
         .badge-normal { background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 20px; font-weight: 700; }
-        .badge-low { background: #ffedd5; color: #9a3412; padding: 4px 10px; border-radius: 20px; font-weight: 700; }
-        .badge-high { background: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 20px; font-weight: 700; }
-        .conclusion-card {
-            background: #fffbeb;
-            border-left: 5px solid #f59e0b;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-        }
-        .conclusion-card.critical { background: #fef2f2; border-left-color: #ef4444; }
-        .conclusion-card.high { background: #fff7ed; border-left-color: #f97316; }
-        .conclusion-card.medium { background: #fffbeb; border-left-color: #f59e0b; }
-        .conclusion-card.low { background: #f0fdf4; border-left-color: #10b981; }
-        .supplement-item {
-            background: #f0f9ff;
-            padding: 14px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            border-left: 4px solid #3b82f6;
-        }
-        .danger-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 700;
-            margin-top: 6px;
-        }
-        .danger-low { background: #d1fae5; color: #065f46; }
-        .danger-medium { background: #fef3c7; color: #92400e; }
-        .danger-high { background: #fee2e2; color: #991b1b; }
-        .overall-box {
-            margin-top: 18px;
-            padding: 16px;
-            background: #f1f5f9;
-            border-radius: 12px;
-            font-weight: 600;
-        }
+        .badge-low { background: #ffedd5; color: #9a3412; }
+        .badge-high { background: #fee2e2; color: #991b1b; }
+        .conclusion-card { background: #fffbeb; border-left: 5px solid #f59e0b; padding: 16px; border-radius: 12px; margin-bottom: 12px; }
+        .supplement-item { background: #f0f9ff; padding: 14px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #3b82f6; }
+        .overall-box { margin-top: 18px; padding: 16px; background: #f1f5f9; border-radius: 12px; font-weight: 600; }
         .small-note { margin-top: 14px; font-size: 12px; color: #9ca3af; text-align: center; }
-        a.back-link {
-            display: block;
-            margin-top: 12px;
-            text-align: center;
-            color: #6366f1;
-            text-decoration: none;
-            font-weight: 600;
-        }
+        a.back-link { display: block; margin-top: 12px; text-align: center; color: #6366f1; text-decoration: none; font-weight: 600; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📄 Загрузка анализов из PDF</h1>
         <p class="subtitle">Загрузите файл с результатами анализов (PDF) — мы расшифруем показатели и дадим заключение</p>
-
+        <div id="patientInfoBox" class="patient-card" style="display:none;"></div>
+        <div id="manualInputBox">
+            <div class="profile-row">
+                <div class="profile-field">
+                    <label>Пол</label>
+                    <div class="gender-options" id="genderSelect">
+                        <div class="gender-option selected" data-value="female">👩 Женский</div>
+                        <div class="gender-option" data-value="male">👨 Мужской</div>
+                    </div>
+                    <input type="hidden" name="gender" value="female">
+                </div>
+                <div class="profile-field">
+                    <label for="ageInput">Возраст</label>
+                    <input type="number" id="ageInput" placeholder="Введите возраст" min="0" max="120" value="30">
+                </div>
+            </div>
+        </div>
         <div class="upload-area" id="uploadArea">
-            <p style="font-size: 18px; margin-bottom: 10px;">📁 Перетащите PDF сюда или нажмите для выбора</p>
-            <p style="color: #6b7280; font-size: 13px;">Поддерживаются файлы до 10 МБ</p>
+            <p style="font-size: 18px;">📁 Перетащите PDF сюда или нажмите для выбора</p>
             <input type="file" id="fileInput" accept=".pdf" />
         </div>
         <button class="btn" id="analyzeBtn" disabled>🔍 Анализировать</button>
-
         <div id="loading" style="display:none; text-align:center; margin-top:20px;">⏳ Обрабатываем PDF...</div>
         <div id="resultsContainer" style="display:none;">
             <div class="patient-card" id="patientInfo"></div>
             <div id="resultsList"></div>
             <div id="conclusion"></div>
         </div>
-
         <div class="small-note">⚕️ Автоматическая расшифровка. При неточностях сверяйтесь с оригиналом.</div>
         <a class="back-link" href="index.html">← Вернуться на главную</a>
     </div>
 
+    <script src="database.js"></script>
     <script>
-        // === Синонимы анализов ===
-        const testSynonyms = {
-            "Глюкоза натощак": ["глюкоза", "glucose", "сахар"],
-            "Гликированный гемоглобин (HbA1c)": ["гликированный", "hba1c", "a1c"],
-            "Общий холестерин": ["холестерин общий", "холестерин", "cholesterol"],
-            "ЛПНП": ["лпнп", "ldl", "липопротеины низкой"],
-            "ЛПВП": ["лпвп", "hdl", "липопротеины высокой"],
-            "Триглицериды": ["триглицериды", "triglycerides"],
-            "ТТГ": ["ттг", "tsh", "тиреотропный"],
-            "Свободный Т4": ["свободный т4", "т4 свободный", "ft4", "тироксин свободный"],
-            "Ферритин": ["ферритин", "ferritin"],
-            "Железо сывороточное": ["железо", "iron", "fe сыв"],
-            "Витамин D 25-OH": ["витамин d", "25-oh", "витамин д", "25(oh)"],
-            "Витамин B12": ["витамин b12", "витамин в12", "b12", "цианокобаламин"],
-            "Фолиевая кислота": ["фолиевая", "фолат", "folic"],
-            "Креатинин": ["креатинин", "creatinine"],
-            "Мочевина": ["мочевина", "urea"],
-            "АЛТ": ["алт", "alt", "аланинаминотрансфераза"],
-            "АСТ": ["аст", "ast", "аспартатаминотрансфераза"],
-            "Билирубин общий": ["билирубин общий", "общий билирубин", "bilirubin total"],
-            "Общий белок": ["общий белок", "total protein"],
-            "Альбумин": ["альбумин", "albumin"],
-            "Магний": ["магний", "magnesium", "mg"],
-            "Калий": ["калий", "potassium", "k\\+"],
-            "Натрий": ["натрий", "sodium", "na\\+"],
-            "Кальций общий": ["кальций общий", "кальций", "calcium"],
-            "Цинк": ["цинк", "zinc", "zn"],
-            "Тестостерон общий": ["тестостерон общий", "тестостерон", "testosterone"],
-            "Пролактин": ["пролактин", "prolactin"],
-            "Инсулин натощак": ["инсулин", "insulin"],
-            "ПСА общий": ["пса", "psa", "простатспецифический"]
-        };
+        const genderInput = document.querySelector('input[name="gender"]');
+        const ageInput = document.getElementById('ageInput');
+        const patientInfoBox = document.getElementById('patientInfoBox');
+        const manualInputBox = document.getElementById('manualInputBox');
 
-        const norms = {
-            "Глюкоза натощак": { min: 3.3, max: 5.5, unit: "ммоль/л" },
-            "Гликированный гемоглобин (HbA1c)": { min: 4.0, max: 6.0, unit: "%" },
-            "Общий холестерин": { min: 3.0, max: 5.2, unit: "ммоль/л" },
-            "ЛПНП": { min: 0, max: 3.0, unit: "ммоль/л" },
-            "ЛПВП": { min: 1.0, max: 2.0, unit: "ммоль/л" },
-            "Триглицериды": { min: 0.5, max: 1.7, unit: "ммоль/л" },
-            "ТТГ": { min: 0.4, max: 4.0, unit: "мМЕ/л" },
-            "Свободный Т4": { min: 10, max: 22, unit: "пмоль/л" },
-            "Ферритин": { min: 20, max: 250, unit: "нг/мл" },
-            "Железо сывороточное": { min: 10, max: 30, unit: "мкмоль/л" },
-            "Витамин D 25-OH": { min: 30, max: 100, unit: "нг/мл" },
-            "Витамин B12": { min: 180, max: 900, unit: "пг/мл" },
-            "Фолиевая кислота": { min: 3, max: 17, unit: "нг/мл" },
-            "Креатинин": { min: 50, max: 110, unit: "мкмоль/л" },
-            "Мочевина": { min: 2.5, max: 8.3, unit: "ммоль/л" },
-            "АЛТ": { min: 0, max: 40, unit: "Ед/л" },
-            "АСТ": { min: 0, max: 40, unit: "Ед/л" },
-            "Билирубин общий": { min: 3.4, max: 17.1, unit: "мкмоль/л" },
-            "Общий белок": { min: 65, max: 85, unit: "г/л" },
-            "Альбумин": { min: 35, max: 50, unit: "г/л" },
-            "Магний": { min: 0.75, max: 1.25, unit: "ммоль/л" },
-            "Калий": { min: 3.5, max: 5.1, unit: "ммоль/л" },
-            "Натрий": { min: 135, max: 145, unit: "ммоль/л" },
-            "Кальций общий": { min: 2.15, max: 2.55, unit: "ммоль/л" },
-            "Цинк": { min: 10, max: 18, unit: "мкмоль/л" },
-            "Тестостерон общий": { min: 8, max: 35, unit: "нмоль/л" },
-            "Пролактин": { min: 50, max: 400, unit: "мЕд/л" },
-            "Инсулин натощак": { min: 2.6, max: 24.9, unit: "мкЕд/мл" },
-            "ПСА общий": { min: 0, max: 4.0, unit: "нг/мл" }
-        };
-
-        const diagnosticRules = [
-            { id: 1, name: "Железодефицитная анемия", danger: "medium", doctors: ["Терапевт", "Гематолог"], results: { "Ферритин": "low", "Железо сывороточное": "low" } },
-            { id: 2, name: "Гипотиреоз", danger: "medium", doctors: ["Эндокринолог"], results: { "ТТГ": "high", "Свободный Т4": "low" } },
-            { id: 3, name: "Гипертиреоз", danger: "high", doctors: ["Эндокринолог"], results: { "ТТГ": "low", "Свободный Т4": "high" } },
-            { id: 4, name: "Сахарный диабет (подозрение)", danger: "high", doctors: ["Эндокринолог", "Терапевт"], results: { "Глюкоза натощак": "high", "HbA1c": "high" } },
-            { id: 5, name: "Дефицит витамина D", danger: "low", doctors: ["Терапевт"], results: { "Витамин D 25-OH": "low" } },
-            { id: 6, name: "Гипогонадизм (низкий тестостерон)", danger: "medium", doctors: ["Уролог", "Андролог", "Эндокринолог"], results: { "Тестостерон общий": "low" } },
-            { id: 7, name: "Поражение печени", danger: "high", doctors: ["Гастроэнтеролог", "Гепатолог"], results: { "АЛТ": "high", "АСТ": "high" } },
-            { id: 8, name: "Хроническая болезнь почек (подозрение)", danger: "high", doctors: ["Нефролог", "Терапевт"], results: { "Креатинин": "high" } },
-            { id: 9, name: "Дефицит витамина B12", danger: "low", doctors: ["Терапевт", "Невролог"], results: { "Витамин B12": "low" } },
-            { id: 10, name: "Гиперпролактинемия", danger: "medium", doctors: ["Эндокринолог", "Гинеколог"], results: { "Пролактин": "high" } }
-        ];
-
-        const supplementMap = {
-            "Витамин D 25-OH": { low: { supplement: "Витамин D3 2000–4000 МЕ/сут", doctors: ["Терапевт"], duration: "2–3 месяца, затем контроль анализа", danger: "low", note: "Поддерживает иммунитет и кости." } },
-            "Витамин B12": { low: { supplement: "Витамин B12 1000–2000 мкг/сут", doctors: ["Терапевт", "Невролог"], duration: "1–2 месяца", danger: "low", note: "Необходим для нервной системы." } },
-            "Фолиевая кислота": { low: { supplement: "Фолиевая кислота 400–800 мкг/сут", doctors: ["Терапевт"], duration: "1–2 месяца", danger: "low", note: "Важна для кроветворения." } },
-            "Ферритин": { low: { supplement: "Препараты железа (по назначению врача)", doctors: ["Терапевт", "Гематолог"], duration: "1–2 месяца под контролем анализов", danger: "medium", note: "Скрытый железодефицит." } },
-            "Железо сывороточное": { low: { supplement: "Препараты железа", doctors: ["Терапевт", "Гематолог"], duration: "1–2 месяца", danger: "medium", note: "Может потребоваться доп. диагностика." } },
-            "Магний": { low: { supplement: "Магний 300–400 мг/сут", doctors: ["Терапевт"], duration: "1–2 месяца", danger: "low", note: "От судорог и утомляемости." } },
-            "Кальций общий": { low: { supplement: "Кальций 500–1000 мг/сут", doctors: ["Терапевт"], duration: "1–3 месяца", danger: "low", note: "Для костей и мышц." } },
-            "Цинк": { low: { supplement: "Цинк 15–30 мг/сут", doctors: ["Терапевт"], duration: "1–2 месяца", danger: "low", note: "Иммунитет, кожа, волосы." } },
-            "Тестостерон общий": { low: { supplement: "Гормональная терапия под контролем врача", doctors: ["Уролог", "Андролог", "Эндокринолог"], duration: "длительно, по схеме врача", danger: "medium", note: "Не корректировать самостоятельно." } },
-            "Глюкоза натощак": { high: { supplement: "Контроль углеводов, консультация эндокринолога", doctors: ["Эндокринолог", "Терапевт"], duration: "постоянный контроль", danger: "high", note: "Риск диабета." } },
-            "HbA1c": { high: { supplement: "Строгая диета, наблюдение эндокринолога", doctors: ["Эндокринолог", "Терапевт"], duration: "контроль каждые 3 мес.", danger: "high", note: "Долгосрочный сахар." } },
-            "ТТГ": {
-                high: { supplement: "Лечение гипотиреоза (тироксин)", doctors: ["Эндокринолог"], duration: "длительно, под контролем ТТГ", danger: "medium", note: "Гипотиреоз." },
-                low: { supplement: "Обследование щитовидной железы", doctors: ["Эндокринолог"], duration: "по результатам", danger: "high", note: "Гипертиреоз опасен для сердца." }
-            },
-            "АЛТ": { high: { supplement: "Гепатопротекторы только по назначению врача", doctors: ["Гастроэнтеролог", "Гепатолог", "Терапевт"], duration: "до нормализации ферментов", danger: "high", note: "Повреждение печени." } },
-            "АСТ": { high: { supplement: "Аналогично АЛТ — консультация гастроэнтеролога", doctors: ["Гастроэнтеролог", "Кардиолог"], duration: "до нормализации ферментов", danger: "high", note: "Повреждение печени или сердца." } },
-            "Креатинин": { high: { supplement: "Срочно к нефрологу/терапевту", doctors: ["Нефролог", "Терапевт"], duration: "постоянный мониторинг", danger: "high", note: "Снижение функции почек." } },
-            "Альбумин": { low: { supplement: "Белковое питание, консультация гастроэнтеролога", doctors: ["Гастроэнтеролог", "Терапевт"], duration: "до восстановления уровня", danger: "medium", note: "Проблемы с печенью или почками." } }
-        };
-
-        // Профилактические рекомендации (даже когда всё в норме)
-        const preventiveRecommendations = [
-            { supplement: "Витамин D3 1000–2000 МЕ/сут", doctors: ["Терапевт"], duration: "1–2 месяца в осенне-зимний период", note: "Для поддержания иммунитета и костей (профилактика)." },
-            { supplement: "Магний (цитрат) 200–300 мг/сут", doctors: ["Терапевт"], duration: "1 месяц, курс 2–3 раза в год", note: "От стресса, утомляемости и для улучшения сна." },
-            { supplement: "Омега-3 1000–2000 мг/сут", doctors: ["Терапевт", "Кардиолог"], duration: "постоянно или курсами по 3 месяца", note: "Для сердца, сосудов и мозга." },
-            { supplement: "Витамин С 500 мг/сут", doctors: ["Терапевт"], duration: "курсами по 1–2 месяца", note: "Антиоксидант, поддержка иммунитета." }
-        ];
+        document.querySelectorAll('#genderSelect .gender-option').forEach(div => {
+            div.addEventListener('click', () => {
+                document.querySelectorAll('#genderSelect .gender-option').forEach(d => d.classList.remove('selected'));
+                div.classList.add('selected');
+                genderInput.value = div.dataset.value;
+            });
+        });
 
         let selectedFile = null;
-
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const analyzeBtn = document.getElementById('analyzeBtn');
@@ -282,6 +114,8 @@
             if (file && file.type === 'application/pdf') {
                 selectedFile = file;
                 analyzeBtn.disabled = false;
+                patientInfoBox.style.display = 'none';
+                manualInputBox.style.display = 'block';
             } else {
                 alert('Пожалуйста, выберите PDF-файл.');
                 analyzeBtn.disabled = true;
@@ -296,69 +130,104 @@
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
-                const pageText = textContent.items.map(item => item.str).join(' ');
-                fullText += pageText + '\n';
+                const items = textContent.items;
+                const lines = [];
+                let currentLine = [];
+                let lastY = null;
+                for (const item of items) {
+                    const y = Math.round(item.transform[5] * 10) / 10;
+                    if (lastY !== null && Math.abs(y - lastY) > 2) {
+                        lines.push(currentLine.map(it => it.str).join(' '));
+                        currentLine = [];
+                    }
+                    currentLine.push(item);
+                    lastY = y;
+                }
+                if (currentLine.length > 0) lines.push(currentLine.map(it => it.str).join(' '));
+                fullText += lines.join('\n') + '\n';
             }
             return fullText;
         }
 
-        function parseAnalysisText(text) {
-            const results = {};
-
-            for (const [testName, synonyms] of Object.entries(testSynonyms)) {
-                const norm = norms[testName];
-                if (!norm) continue;
-
-                let found = false;
-                let value = null;
-
-                for (const synonym of synonyms) {
-                    const regex = new RegExp(`${synonym}[^\\d]*?([0-9]+[.,]?[0-9]*)`, 'i');
-                    const match = text.match(regex);
-                    if (match) {
-                        value = parseFloat(match[1].replace(',', '.'));
-                        if (!isNaN(value) && value > 0) {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (found && value !== null) {
-                    let min = norm.min, max = norm.max;
-                    let status = 'normal';
-                    if (value < min) status = 'low';
-                    else if (value > max) status = 'high';
-                    results[testName] = { value, unit: norm.unit, status };
+        function extractPatientInfo(text) {
+            const lowerText = text.toLowerCase();
+            let gender = null;
+            let age = null;
+            if (lowerText.includes('пол: мужской') || lowerText.includes('пол мужской') || lowerText.includes('мужской') || lowerText.includes('м\nужской')) {
+                gender = 'male';
+            } else if (lowerText.includes('пол: женский') || lowerText.includes('пол женский') || lowerText.includes('женский')) {
+                gender = 'female';
+            }
+            const ageMatch = text.match(/\((\d{1,3})\s*(?:год|г|лет|года|г\.)/i);
+            if (ageMatch) {
+                age = parseInt(ageMatch[1], 10);
+            } else {
+                const ageMatch2 = text.match(/(?:возраст|age)\s*:?\s*(\d{1,3})/i);
+                if (ageMatch2) age = parseInt(ageMatch2[1], 10);
+            }
+            const birthMatch = text.match(/дата рождения\s*:?\s*(\d{2})[.\-](\d{2})[.\-](\d{4})/i);
+            if (birthMatch && !age) {
+                const day = parseInt(birthMatch[1]);
+                const month = parseInt(birthMatch[2]);
+                const year = parseInt(birthMatch[3]);
+                const birthDate = new Date(year, month - 1, day);
+                const today = new Date();
+                age = today.getFullYear() - birthDate.getFullYear();
+                if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+                    age--;
                 }
             }
+            return { gender, age };
+        }
 
+        function parseAnalysisText(text, patientSex, patientAge) {
+            const lines = text.split('\n');
+            const results = {};
+            const usedTests = new Set();
+            for (let i = 0; i < lines.length; i++) {
+                const test = window.findTestByAlias(lines[i]);
+                if (!test || usedTests.has(test.canonicalName)) continue;
+                let valueInfo = window.extractNumericResult(lines[i], test, patientSex, patientAge);
+                if (!valueInfo && i + 1 < lines.length) {
+                    valueInfo = window.extractNumericResult(lines[i + 1], test, patientSex, patientAge);
+                }
+                if (valueInfo) {
+                    results[test.canonicalName] = valueInfo;
+                    usedTests.add(test.canonicalName);
+                }
+            }
             return results;
         }
 
         function generateConclusion(analysisResults) {
             const container = document.getElementById('conclusion');
+            if (!analysisResults || Object.keys(analysisResults).length === 0) {
+                container.innerHTML = '<p>Нет данных для заключения.</p>';
+                return;
+            }
             const resultsMap = {};
-            for (const [test, data] of Object.entries(analysisResults)) {
-                resultsMap[test] = data.status;
+            for (const [name, data] of Object.entries(analysisResults)) {
+                resultsMap[name] = data.status;
             }
 
-            const matchedRules = diagnosticRules.filter(rule => {
-                return Object.entries(rule.results).every(([test, dir]) => resultsMap[test] === dir);
-            });
+            const matchedRules = window.diagnosticRules.filter(rule =>
+                Object.entries(rule.results).every(([test, dir]) => resultsMap[test] === dir)
+            );
+
+            let maxDanger = 'low';
+            const allDoctors = new Set();
+            let html = '<div class="section-title">📋 Заключение по анализам</div>';
 
             if (matchedRules.length > 0) {
-                const allDoctors = new Set();
-                matchedRules.forEach(r => r.doctors.forEach(d => allDoctors.add(d)));
-
-                let html = '<div class="section-title">📋 Заключение по анализам</div>';
                 const grouped = { high: [], medium: [], low: [] };
                 matchedRules.forEach(r => {
-                    if (r.danger === 'high' || r.danger === 'critical') grouped.high.push(r);
+                    if (r.danger === 'high') grouped.high.push(r);
                     else if (r.danger === 'medium') grouped.medium.push(r);
                     else grouped.low.push(r);
+                    r.doctors.forEach(d => allDoctors.add(d));
+                    if (r.danger === 'high') maxDanger = 'high';
+                    else if (r.danger === 'medium' && maxDanger !== 'high') maxDanger = 'medium';
                 });
-
                 if (grouped.high.length) {
                     html += `<div class="section-title">🔴 Что критически — высокая угроза</div>`;
                     grouped.high.forEach(r => html += `<div class="conclusion-card high"><strong>🔴 ${r.name}</strong><br>Опасность: Высокая</div>`);
@@ -371,85 +240,84 @@
                     html += `<div class="section-title">🟢 Низкий риск</div>`;
                     grouped.low.forEach(r => html += `<div class="conclusion-card low"><strong>🟢 ${r.name}</strong><br>Опасность: Низкая</div>`);
                 }
-
-                html += `<div class="overall-box">
-                    <strong>👨‍⚕️ К каким врачам обращаться:</strong> ${[...allDoctors].join(', ')}
-                </div>`;
-                container.innerHTML = html;
-                return;
             }
 
-            // === Рекомендации по отклонениям ===
             const recommendations = [];
-            let maxDanger = 'low';
-            const doctorsSet = new Set();
-
-            for (const [test, data] of Object.entries(analysisResults)) {
+            for (const [name, data] of Object.entries(analysisResults)) {
                 if (data.status === 'normal') continue;
-                const mapping = supplementMap[test];
+                const mapping = window.supplementMap[name];
                 if (!mapping) continue;
                 const dirInfo = mapping[data.status];
                 if (!dirInfo) continue;
-                recommendations.push({ test, ...dirInfo, status: data.status });
-                dirInfo.doctors.forEach(d => doctorsSet.add(d));
+                recommendations.push({ test: name, ...dirInfo, status: data.status });
+                dirInfo.doctors.forEach(d => allDoctors.add(d));
                 if (dirInfo.danger === 'high') maxDanger = 'high';
                 else if (dirInfo.danger === 'medium' && maxDanger !== 'high') maxDanger = 'medium';
             }
 
-            let html = '';
-            if (recommendations.length === 0) {
-                html += '<div class="section-title">📋 Заключение</div>';
-                html += '<p>🎉 Все показатели в норме! Отклонений не выявлено.</p>';
-
-                // Показываем профилактические рекомендации
-                html += '<div class="section-title">💊 Профилактические рекомендации (для поддержания здоровья)</div>';
-                preventiveRecommendations.forEach(rec => {
-                    html += `<div class="supplement-item">
-                        <strong>🟢 ${rec.supplement}</strong><br>
-                        🕒 <b>Длительность:</b> ${rec.duration}<br>
-                        📝 ${rec.note}
-                    </div>`;
-                });
-                doctorsSet.add("Терапевт (профилактический осмотр раз в год)");
-            } else {
-                html += '<div class="section-title">📋 Заключение по анализам</div>';
-                const grouped = { high: [], medium: [], low: [] };
+            if (recommendations.length > 0) {
+                html += '<div class="section-title">💊 Рекомендации по витаминам и микроэлементам</div>';
+                const groupedRec = { high: [], medium: [], low: [] };
                 recommendations.forEach(r => {
-                    if (r.danger === 'high') grouped.high.push(r);
-                    else if (r.danger === 'medium') grouped.medium.push(r);
-                    else grouped.low.push(r);
+                    if (r.danger === 'high') groupedRec.high.push(r);
+                    else if (r.danger === 'medium') groupedRec.medium.push(r);
+                    else groupedRec.low.push(r);
                 });
-
-                if (grouped.high.length) {
-                    html += `<div class="section-title">🔴 Что критически — высокая угроза</div>`;
-                    grouped.high.forEach(rec => {
+                if (groupedRec.high.length) {
+                    html += `<div class="section-title">🔴 Что критически</div>`;
+                    groupedRec.high.forEach(rec => {
                         const st = rec.status === 'low' ? 'Понижен' : 'Повышен';
-                        html += `<div class="conclusion-card high"><strong>${rec.test} (${st})</strong><br>💡 ${rec.supplement}<br>🕒 ${rec.duration}<br>📝 ${rec.note}</div>`;
+                        html += `<div class="conclusion-card high"><strong>${rec.test} (${st})</strong><br>
+                            📝 <b>Что это значит:</b> ${rec.description || 'Нет описания'}<br>
+                            ⚠️ <b>Опасность:</b> ${rec.dangerDesc || rec.note || 'Оценивается врачом'}<br>
+                            💡 <b>Рекомендация:</b> ${rec.supplement}<br>
+                            🕒 <b>Длительность:</b> ${rec.duration}<br>
+                            👨‍⚕️ <b>Врач:</b> ${rec.doctors.join(', ')}
+                            <span class="danger-badge danger-high">Высокая угроза</span></div>`;
                     });
                 }
-                if (grouped.medium.length) {
-                    html += `<div class="section-title">🟡 Что требует внимания — средняя угроза</div>`;
-                    grouped.medium.forEach(rec => {
+                if (groupedRec.medium.length) {
+                    html += `<div class="section-title">🟡 Что требует внимания</div>`;
+                    groupedRec.medium.forEach(rec => {
                         const st = rec.status === 'low' ? 'Понижен' : 'Повышен';
-                        html += `<div class="supplement-item"><strong>${rec.test} (${st})</strong><br>💡 <b>Что пить:</b> ${rec.supplement}<br>🕒 <b>Длительность:</b> ${rec.duration}<br>📝 ${rec.note}<span class="danger-badge danger-medium">Средняя угроза</span></div>`;
+                        html += `<div class="supplement-item"><strong>${rec.test} (${st})</strong><br>
+                            📝 <b>Что это значит:</b> ${rec.description || 'Нет описания'}<br>
+                            ⚠️ <b>Опасность:</b> ${rec.dangerDesc || rec.note || 'Оценивается врачом'}<br>
+                            💡 <b>Что пить:</b> ${rec.supplement}<br>
+                            🕒 <b>Длительность:</b> ${rec.duration}<br>
+                            👨‍⚕️ <b>Врач:</b> ${rec.doctors.join(', ')}
+                            <span class="danger-badge danger-medium">Средняя угроза</span></div>`;
                     });
                 }
-                if (grouped.low.length) {
-                    html += `<div class="section-title">🟢 Низкий риск — можно корректировать</div>`;
-                    grouped.low.forEach(rec => {
+                if (groupedRec.low.length) {
+                    html += `<div class="section-title">🟢 Низкий риск</div>`;
+                    groupedRec.low.forEach(rec => {
                         const st = rec.status === 'low' ? 'Понижен' : 'Повышен';
-                        html += `<div class="supplement-item"><strong>${rec.test} (${st})</strong><br>💡 <b>Что пить:</b> ${rec.supplement}<br>🕒 <b>Длительность:</b> ${rec.duration}<br>📝 ${rec.note}<span class="danger-badge danger-low">Низкая угроза</span></div>`;
+                        html += `<div class="supplement-item"><strong>${rec.test} (${st})</strong><br>
+                            📝 <b>Что это значит:</b> ${rec.description || 'Нет описания'}<br>
+                            ⚠️ <b>Опасность:</b> ${rec.dangerDesc || rec.note || 'Оценивается врачом'}<br>
+                            💡 <b>Что пить:</b> ${rec.supplement}<br>
+                            🕒 <b>Длительность:</b> ${rec.duration}<br>
+                            👨‍⚕️ <b>Врач:</b> ${rec.doctors.join(', ')}
+                            <span class="danger-badge danger-low">Низкая угроза</span></div>`;
                     });
                 }
+            } else {
+                html += '<div class="section-title">💊 Профилактические рекомендации</div>';
+                window.preventiveRecommendations.forEach(rec => {
+                    html += `<div class="supplement-item"><strong>🟢 ${rec.supplement}</strong><br>
+                        🕒 <b>Длительность:</b> ${rec.duration}<br>
+                        📝 ${rec.note || ''}</div>`;
+                });
+                allDoctors.add("Терапевт (профилактический осмотр)");
             }
 
             const overallText = maxDanger === 'high' ? '⚠️ Высокая — требуется срочная консультация врача!' :
                                maxDanger === 'medium' ? '🟡 Средняя — рекомендуется визит к специалисту' :
                                '🟢 Низкая — показатели в норме';
-
             html += `<div class="overall-box">
                 <strong>📊 Общая оценка угрозы для здоровья:</strong> ${overallText}<br>
-                <strong>👨‍⚕️ К каким врачам обращаться:</strong> ${[...doctorsSet].join(', ')}
+                <strong>👨‍⚕️ К каким врачам обращаться:</strong> ${[...allDoctors].join(', ')}
             </div>`;
             container.innerHTML = html;
         }
@@ -460,16 +328,33 @@
             resultsContainer.style.display = 'none';
             try {
                 const text = await extractTextFromPDF(selectedFile);
-                const analysisResults = parseAnalysisText(text);
+                const patientInfo = extractPatientInfo(text);
+                let patientSex = patientInfo.gender;
+                let patientAge = patientInfo.age;
 
-                document.getElementById('patientInfo').innerHTML = `<strong>Пациент:</strong> данные из PDF<br><small>Распознано показателей: ${Object.keys(analysisResults).length}</small>`;
+                if (patientSex && patientAge) {
+                    patientInfoBox.innerHTML = `👤 <b>Пациент:</b> ${patientSex==='male'?'Мужчина':'Женщина'}, ${patientAge} лет (определено автоматически)`;
+                    patientInfoBox.style.display = 'block';
+                    manualInputBox.style.display = 'none';
+                } else {
+                    patientInfoBox.style.display = 'none';
+                    manualInputBox.style.display = 'block';
+                    patientSex = genderInput.value;
+                    patientAge = parseInt(ageInput.value, 10) || 30;
+                }
+
+                const analysisResults = parseAnalysisText(text, patientSex, patientAge);
+                document.getElementById('patientInfo').innerHTML = `<strong>Пациент:</strong> ${patientSex==='male'?'Мужчина':'Женщина'}, ${patientAge} лет<br><small>Распознано показателей: ${Object.keys(analysisResults).length}</small>`;
                 const listDiv = document.getElementById('resultsList');
                 listDiv.innerHTML = '';
-                for (const [test, data] of Object.entries(analysisResults)) {
+                if (Object.keys(analysisResults).length === 0) {
+                    listDiv.innerHTML = '<p>⚠️ Не удалось распознать показатели.</p>';
+                }
+                for (const [name, data] of Object.entries(analysisResults)) {
                     const statusClass = data.status === 'normal' ? 'badge-normal' : (data.status === 'low' ? 'badge-low' : 'badge-high');
                     const statusText = data.status === 'normal' ? 'Норма' : (data.status === 'low' ? 'Понижен' : 'Повышен');
                     listDiv.innerHTML += `<div class="result-row">
-                        <span class="result-name">${test}</span>
+                        <span class="result-name">${name}</span>
                         <span class="result-value">${data.value} ${data.unit}</span>
                         <span class="${statusClass}">${statusText}</span>
                     </div>`;
