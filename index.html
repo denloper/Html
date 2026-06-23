@@ -266,16 +266,19 @@
             border-radius: 12px;
             display: inline-block;
         }
-        .upload-link {
-            display: block;
+        .nav-links {
             text-align: center;
             margin-top: 18px;
+        }
+        .nav-links a {
+            display: block;
             color: #667eea;
             font-weight: 600;
             text-decoration: none;
             font-size: 15px;
+            margin-bottom: 8px;
         }
-        .upload-link:hover {
+        .nav-links a:hover {
             text-decoration: underline;
         }
     </style>
@@ -307,8 +310,10 @@
         <button class="btn" onclick="showCheckupPlan()">📋 Показать мой план анализов</button>
         <button id="btnResults" class="btn btn-results" onclick="goToResults()">📊 Посмотреть результаты</button>
 
-        <!-- Ссылка на загрузку PDF -->
-        <a href="upload.html" class="upload-link">📄 Загрузить PDF с готовыми анализами</a>
+        <div class="nav-links">
+            <a href="upload.html">📄 Загрузить PDF с готовыми анализами</a>
+            <a href="compare.html">📈 Сравнить анализы (динамика)</a>
+        </div>
 
         <div id="result"></div>
         <div style="text-align:center;"><div id="qrcode"></div></div>
